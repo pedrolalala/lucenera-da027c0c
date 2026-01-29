@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, Loader2, Zap } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import luceneraVertical from '@/assets/logos/lucenera-vertical.png';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,11 +119,12 @@ export default function LoginPage() {
       >
         {/* Logo/Title */}
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Zap className="w-10 h-10 text-primary-foreground" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">Lucenera</h1>
-          <p className="text-muted-foreground mt-1">Sistema de Entregas</p>
+          <img 
+            src={luceneraVertical} 
+            alt="Lucenera" 
+            className="w-[140px] sm:w-[180px] h-auto mx-auto mb-3"
+          />
+          <p className="text-muted-foreground text-sm">Sistema de Entregas</p>
         </div>
 
         {/* Form */}
