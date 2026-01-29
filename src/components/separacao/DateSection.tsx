@@ -3,26 +3,17 @@ import { MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
 
 interface DateSectionProps {
   date: Date;
   count: number;
   children: ReactNode;
+  onCreateRoute?: () => void;
 }
 
-export function DateSection({ date, count, children }: DateSectionProps) {
-  const { toast } = useToast();
-  
+export function DateSection({ date, count, children, onCreateRoute }: DateSectionProps) {
   const formattedDate = format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
-
-  const handleCreateRoute = () => {
-    toast({
-      title: 'Rota em desenvolvimento',
-      description: 'A integração com Google Maps/Waze será implementada em breve.',
-    });
-  };
 
   return (
     <section className="mb-10">
@@ -35,7 +26,7 @@ export function DateSection({ date, count, children }: DateSectionProps) {
           </span>
         </div>
         <Button
-          onClick={handleCreateRoute}
+          onClick={onCreateRoute}
           className="bg-primary hover:bg-primary-dark text-primary-foreground self-start sm:self-auto"
         >
           <MapPin className="w-4 h-4 mr-2" />
