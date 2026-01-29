@@ -1,18 +1,18 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { DateSection } from '@/components/separacao/DateSection';
 import { SeparacaoCard } from '@/components/separacao/SeparacaoCard';
 import { EmptyState } from '@/components/separacao/EmptyState';
-import { mockSeparacoes } from '@/data/mockData';
-import { Separacao, FiltroSegmento } from '@/types/separacao';
-import { useToast } from '@/hooks/use-toast';
-import { format, subDays, subMonths, isAfter, isBefore, startOfDay } from 'date-fns';
+import { LoadingSkeleton } from '@/components/separacao/LoadingSkeleton';
+import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
+import { FiltroSegmento } from '@/types/separacao';
+import { format, subDays, subMonths, isAfter, startOfDay, parseISO } from 'date-fns';
+import { useState } from 'react';
 
 export default function SeparacaoPage() {
-  const [separacoes, setSeparacoes] = useState<Separacao[]>(mockSeparacoes);
+  const { separacoes, isLoading, updateStatus } = useSeparacoes();
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
-  const { toast } = useToast();
 
   // Filter logic
   const filteredSeparacoes = useMemo(() => {
@@ -38,8 +38,9 @@ export default function SeparacaoPage() {
 
     return separacoes.filter((s) => {
       if (!startDate) return true;
-      return isAfter(startOfDay(s.dataEntrega), startDate) || 
-             format(s.dataEntrega, 'yyyy-MM-dd') === format(startDate, 'yyyy-MM-dd');
+      const entregaDate = startOfDay(parseISO(s.data_entrega));
+      return isAfter(entregaDate, startDate) || 
+             format(entregaDate, 'yyyy-MM-dd') === format(startDate, 'yyyy-MM-dd');
     });
   }, [separacoes, filtro]);
 
@@ -48,7 +49,7 @@ export default function SeparacaoPage() {
     const groups: { [key: string]: Separacao[] } = {};
     
     filteredSeparacoes.forEach((s) => {
-      const dateKey = format(s.dataEntrega, 'yyyy-MM-dd');
+      const dateKey = s.data_entrega;
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -59,23 +60,13 @@ export default function SeparacaoPage() {
     return Object.entries(groups)
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
       .map(([dateStr, items]) => ({
-        date: new Date(dateStr),
+        date: parseISO(dateStr),
         items,
       }));
   }, [filteredSeparacoes]);
 
-  const handleStatusChange = (id: string, newStatus: Separacao['status']) => {
-    setSeparacoes((prev) =>
-      prev.map((s) =>
-        s.id === id ? { ...s, status: newStatus, updatedAt: new Date() } : s
-      )
-    );
-
-    toast({
-      title: 'Status atualizado com sucesso!',
-      description: `A ordem foi marcada como "${newStatus === 'separado' ? 'Separado' : 'Separando'}"`,
-      className: 'bg-success text-success-foreground border-none',
-    });
+  const handleStatusChange = (id: string, newStatus: 'separando' | 'separado') => {
+    updateStatus(id, newStatus);
   };
 
   return (
@@ -92,7 +83,9 @@ export default function SeparacaoPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {groupedByDate.length === 0 ? (
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : groupedByDate.length === 0 ? (
           <EmptyState />
         ) : (
           groupedByDate.map(({ date, items }) => (

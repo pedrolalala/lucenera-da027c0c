@@ -14,13 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      entregas_finalizadas: {
+        Row: {
+          cliente: string
+          codigo_obra: string
+          created_at: string
+          data_entrega_real: string
+          endereco: string
+          fotos_urls: string[]
+          id: string
+          material_conteudo: string
+          material_tipo: string
+          observacoes: string | null
+          recebido_por: string
+          separacao_id: string
+          telefone: string
+        }
+        Insert: {
+          cliente: string
+          codigo_obra: string
+          created_at?: string
+          data_entrega_real?: string
+          endereco: string
+          fotos_urls?: string[]
+          id?: string
+          material_conteudo: string
+          material_tipo: string
+          observacoes?: string | null
+          recebido_por: string
+          separacao_id: string
+          telefone: string
+        }
+        Update: {
+          cliente?: string
+          codigo_obra?: string
+          created_at?: string
+          data_entrega_real?: string
+          endereco?: string
+          fotos_urls?: string[]
+          id?: string
+          material_conteudo?: string
+          material_tipo?: string
+          observacoes?: string | null
+          recebido_por?: string
+          separacao_id?: string
+          telefone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_finalizadas_separacao_id_fkey"
+            columns: ["separacao_id"]
+            isOneToOne: false
+            referencedRelation: "separacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      separacoes: {
+        Row: {
+          cliente: string
+          codigo_obra: string
+          created_at: string
+          data_entrega: string
+          endereco: string
+          id: string
+          material_conteudo: string
+          material_tipo: string
+          responsavel_recebimento: string
+          status: string
+          telefone: string
+          updated_at: string
+        }
+        Insert: {
+          cliente: string
+          codigo_obra: string
+          created_at?: string
+          data_entrega: string
+          endereco: string
+          id?: string
+          material_conteudo: string
+          material_tipo?: string
+          responsavel_recebimento: string
+          status?: string
+          telefone: string
+          updated_at?: string
+        }
+        Update: {
+          cliente?: string
+          codigo_obra?: string
+          created_at?: string
+          data_entrega?: string
+          endereco?: string
+          id?: string
+          material_conteudo?: string
+          material_tipo?: string
+          responsavel_recebimento?: string
+          status?: string
+          telefone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_authenticated: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

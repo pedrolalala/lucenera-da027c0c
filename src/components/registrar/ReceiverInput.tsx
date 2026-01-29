@@ -6,12 +6,10 @@ import { cn } from '@/lib/utils';
 interface ReceiverInputProps {
   value: string;
   onChange: (value: string) => void;
-  defaultValue: string;
 }
 
-export function ReceiverInput({ value, onChange, defaultValue }: ReceiverInputProps) {
+export function ReceiverInput({ value, onChange }: ReceiverInputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const isEdited = value !== defaultValue;
   const isValid = value.trim().length >= 3;
 
   return (
@@ -34,7 +32,7 @@ export function ReceiverInput({ value, onChange, defaultValue }: ReceiverInputPr
           placeholder="Nome de quem recebeu"
           className={cn(
             'h-14 text-lg pl-12 border-2 rounded-xl transition-all',
-            !isFocused && !isEdited && 'bg-muted',
+            !isFocused && value && 'bg-muted',
             isFocused && 'bg-card',
             !isValid && value.length > 0 && 'border-destructive'
           )}

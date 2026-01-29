@@ -1,8 +1,8 @@
 import { Calendar, MapPin, User } from 'lucide-react';
-import { EntregaFinalizada } from '@/types/separacao';
+import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PhotoGallery } from './PhotoGallery';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface EntregaFinalizadaCardProps {
@@ -11,7 +11,7 @@ interface EntregaFinalizadaCardProps {
 
 export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
   const formattedDate = format(
-    entrega.dataEntregaReal, 
+    parseISO(entrega.data_entrega_real), 
     "dd/MM/yyyy 'às' HH:mm", 
     { locale: ptBR }
   );
@@ -22,7 +22,7 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
       <div className="flex items-start justify-between mb-5">
         <StatusBadge status="finalizado" />
         <span className="text-sm font-medium text-muted-foreground">
-          Obra #{entrega.codigoObra}
+          Código: {entrega.codigo_obra}
         </span>
       </div>
 
@@ -61,7 +61,7 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
             <div className="w-5 h-5 rounded-full bg-success-light flex items-center justify-center">
               <User className="w-3 h-3 text-success" />
             </div>
-            <p className="field-value text-success">{entrega.recebidoPor}</p>
+            <p className="field-value text-success">{entrega.recebido_por}</p>
           </div>
         </div>
       </div>
@@ -69,20 +69,20 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
       {/* Material */}
       <div className="mb-5">
         <p className="text-sm font-semibold text-foreground mb-2">Material</p>
-        {entrega.materialTipo === 'texto' && (
+        {entrega.material_tipo === 'texto' && (
           <div className="bg-muted rounded-lg p-3">
             <pre className="text-sm text-secondary-foreground whitespace-pre-wrap font-sans">
-              {entrega.materialConteudo}
+              {entrega.material_conteudo}
             </pre>
           </div>
         )}
       </div>
 
       {/* Photo Gallery */}
-      {entrega.fotosUrls.length > 0 && (
+      {entrega.fotos_urls.length > 0 && (
         <div className="mb-5">
           <p className="text-sm font-semibold text-foreground mb-3">Registro Fotográfico</p>
-          <PhotoGallery photos={entrega.fotosUrls} />
+          <PhotoGallery photos={entrega.fotos_urls} />
         </div>
       )}
 

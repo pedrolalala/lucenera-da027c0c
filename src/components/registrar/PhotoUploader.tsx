@@ -4,34 +4,36 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface PhotoUploaderProps {
-  photos: string[];
-  onAddPhoto: (photoUrl: string) => void;
-  onRemovePhoto: (index: number) => void;
+  fotos: File[];
+  onFotosChange: (fotos: File[]) => void;
 }
 
-export function PhotoUploader({ photos, onAddPhoto, onRemovePhoto }: PhotoUploaderProps) {
+export function PhotoUploader({ fotos, onFotosChange }: PhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
+    const validTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/webp'];
+    const newFiles: File[] = [];
+    
     Array.from(files).forEach((file) => {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/heic', 'image/webp'];
-      if (!validTypes.includes(file.type)) {
-        return;
+      if (validTypes.includes(file.type)) {
+        newFiles.push(file);
       }
-
-      // Create preview URL
-      const url = URL.createObjectURL(file);
-      onAddPhoto(url);
     });
+
+    onFotosChange([...fotos, ...newFiles]);
 
     // Reset input
     if (inputRef.current) {
       inputRef.current.value = '';
     }
+  };
+
+  const handleRemove = (index: number) => {
+    onFotosChange(fotos.filter((_, i) => i !== index));
   };
 
   const triggerFileInput = () => {
@@ -60,7 +62,7 @@ export function PhotoUploader({ photos, onAddPhoto, onRemovePhoto }: PhotoUpload
         className="hidden"
       />
 
-      {photos.length === 0 ? (
+      {fotos.length === 0 ? (
         /* Empty state - Large button */
         <button
           type="button"
@@ -81,19 +83,19 @@ export function PhotoUploader({ photos, onAddPhoto, onRemovePhoto }: PhotoUpload
         /* Photos grid */
         <div className="space-y-3">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {photos.map((photo, index) => (
+            {fotos.map((foto, index) => (
               <div
                 key={index}
                 className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
               >
                 <img
-                  src={photo}
+                  src={URL.createObjectURL(foto)}
                   alt={`Foto ${index + 1}`}
                   className="w-full h-full object-cover"
                 />
                 <button
                   type="button"
-                  onClick={() => onRemovePhoto(index)}
+                  onClick={() => handleRemove(index)}
                   className={cn(
                     'absolute top-2 right-2 w-6 h-6 rounded-full',
                     'bg-destructive text-destructive-foreground',
@@ -121,7 +123,7 @@ export function PhotoUploader({ photos, onAddPhoto, onRemovePhoto }: PhotoUpload
 
           {/* Counter */}
           <p className="text-xs text-success font-medium">
-            {photos.length} {photos.length === 1 ? 'foto adicionada' : 'fotos adicionadas'}
+            {fotos.length} {fotos.length === 1 ? 'foto adicionada' : 'fotos adicionadas'}
           </p>
         </div>
       )}
