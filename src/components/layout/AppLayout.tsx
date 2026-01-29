@@ -1,7 +1,10 @@
 import { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Package, CheckCircle2, Zap, Truck } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Package, CheckCircle2, Zap, Truck, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -27,6 +30,18 @@ const navItems = [
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: 'Até logo!',
+      description: 'Você foi desconectado com sucesso.',
+    });
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -65,6 +80,27 @@ export function AppLayout({ children }: AppLayoutProps) {
                 );
               })}
             </nav>
+
+            {/* User Menu */}
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <span className="text-sm font-medium text-foreground max-w-[120px] truncate">
+                  {user?.email?.split('@')[0]}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Sair</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>

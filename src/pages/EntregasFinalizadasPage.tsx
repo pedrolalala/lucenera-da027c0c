@@ -4,15 +4,16 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
 import { EntregaFinalizadaCard } from '@/components/finalizadas/EntregaFinalizadaCard';
 import { EmptyState } from '@/components/separacao/EmptyState';
+import { LoadingSkeleton } from '@/components/separacao/LoadingSkeleton';
 import { Input } from '@/components/ui/input';
-import { mockEntregasFinalizadas } from '@/data/mockData';
-import { EntregaFinalizada, FiltroSegmento } from '@/types/separacao';
-import { subDays, subMonths, isAfter, startOfDay, format } from 'date-fns';
+import { useEntregasFinalizadas } from '@/hooks/useEntregasFinalizadas';
+import { FiltroSegmento } from '@/types/separacao';
+import { subDays, subMonths, isAfter, startOfDay, parseISO, format } from 'date-fns';
 
 export default function EntregasFinalizadasPage() {
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
   const [searchQuery, setSearchQuery] = useState('');
-  const [entregas] = useState<EntregaFinalizada[]>(mockEntregasFinalizadas);
+  const { entregas, isLoading } = useEntregasFinalizadas();
 
   // Filter logic
   const filteredEntregas = useMemo(() => {
@@ -40,7 +41,7 @@ export default function EntregasFinalizadasPage() {
       .filter((e) => {
         // Date filter
         if (startDate) {
-          const entregaDate = startOfDay(e.dataEntregaReal);
+          const entregaDate = startOfDay(parseISO(e.data_entrega_real));
           if (!isAfter(entregaDate, startDate) && 
               format(entregaDate, 'yyyy-MM-dd') !== format(startDate, 'yyyy-MM-dd')) {
             return false;
@@ -52,13 +53,13 @@ export default function EntregasFinalizadasPage() {
           const query = searchQuery.toLowerCase();
           return (
             e.cliente.toLowerCase().includes(query) ||
-            e.codigoObra.toLowerCase().includes(query)
+            e.codigo_obra.toLowerCase().includes(query)
           );
         }
 
         return true;
       })
-      .sort((a, b) => b.dataEntregaReal.getTime() - a.dataEntregaReal.getTime());
+      .sort((a, b) => new Date(b.data_entrega_real).getTime() - new Date(a.data_entrega_real).getTime());
   }, [entregas, filtro, searchQuery]);
 
   return (
@@ -89,7 +90,9 @@ export default function EntregasFinalizadasPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {filteredEntregas.length === 0 ? (
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : filteredEntregas.length === 0 ? (
           <EmptyState 
             title="Nenhuma entrega finalizada encontrada"
             subtitle="Ajuste os filtros ou realize uma busca diferente"

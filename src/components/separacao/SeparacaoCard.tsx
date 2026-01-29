@@ -1,12 +1,12 @@
 import { Phone, MapPin, User, Check, RotateCcw } from 'lucide-react';
-import { Separacao } from '@/types/separacao';
+import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface SeparacaoCardProps {
   separacao: Separacao;
-  onStatusChange: (id: string, newStatus: Separacao['status']) => void;
+  onStatusChange: (id: string, newStatus: 'separando' | 'separado') => void;
 }
 
 export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps) {
@@ -35,7 +35,7 @@ export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps)
       <div className="flex items-start justify-between mb-4">
         <StatusBadge status={separacao.status} />
         <span className="text-sm font-medium text-muted-foreground">
-          Obra #{separacao.codigoObra}
+          Código: {separacao.codigo_obra}
         </span>
       </div>
 
@@ -52,7 +52,7 @@ export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps)
           <p className="field-label mb-1">Responsável</p>
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-muted-foreground" />
-            <p className="field-value">{separacao.responsavelRecebimento}</p>
+            <p className="field-value">{separacao.responsavel_recebimento}</p>
           </div>
         </div>
 
@@ -89,10 +89,10 @@ export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps)
       {/* Material */}
       <div className="mb-5">
         <p className="text-sm font-semibold text-foreground mb-2">Material a Entregar</p>
-        {separacao.materialTipo === 'texto' && (
+        {separacao.material_tipo === 'texto' && (
           <div className="bg-muted rounded-lg p-3">
             <pre className="text-sm text-secondary-foreground whitespace-pre-wrap font-sans">
-              {separacao.materialConteudo}
+              {separacao.material_conteudo}
             </pre>
           </div>
         )}

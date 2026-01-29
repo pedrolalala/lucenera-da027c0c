@@ -1,13 +1,13 @@
 import { Check, MapPin, User, Phone } from 'lucide-react';
-import { Separacao } from '@/types/separacao';
+import { Separacao } from '@/hooks/useSeparacoes';
 
 interface ObraResumoCardProps {
-  obra: Separacao;
+  separacao: Separacao;
 }
 
-export function ObraResumoCard({ obra }: ObraResumoCardProps) {
+export function ObraResumoCard({ separacao }: ObraResumoCardProps) {
   const handleCall = () => {
-    window.open(`tel:${obra.telefone.replace(/\D/g, '')}`, '_self');
+    window.open(`tel:${separacao.telefone.replace(/\D/g, '')}`, '_self');
   };
 
   return (
@@ -24,7 +24,7 @@ export function ObraResumoCard({ obra }: ObraResumoCardProps) {
             Cliente
           </p>
           <p className="text-base font-semibold text-foreground">
-            {obra.cliente}
+            {separacao.cliente}
           </p>
         </div>
 
@@ -35,7 +35,7 @@ export function ObraResumoCard({ obra }: ObraResumoCardProps) {
           </p>
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-foreground">{obra.endereco}</p>
+            <p className="text-sm text-foreground">{separacao.endereco}</p>
           </div>
         </div>
 
@@ -48,7 +48,7 @@ export function ObraResumoCard({ obra }: ObraResumoCardProps) {
             <div className="flex items-center gap-2">
               <User className="w-4 h-4 text-primary flex-shrink-0" />
               <p className="text-sm font-medium text-foreground">
-                {obra.responsavelRecebimento}
+                {separacao.responsavel_recebimento}
               </p>
             </div>
           </div>
@@ -64,7 +64,7 @@ export function ObraResumoCard({ obra }: ObraResumoCardProps) {
             >
               <Phone className="w-4 h-4 flex-shrink-0" />
               <p className="text-sm font-medium underline">
-                {obra.telefone}
+                {separacao.telefone}
               </p>
             </button>
           </div>
@@ -77,7 +77,7 @@ export function ObraResumoCard({ obra }: ObraResumoCardProps) {
           </p>
           <div className="bg-card rounded-lg p-3 border border-border">
             <pre className="text-sm text-secondary-foreground whitespace-pre-wrap font-sans">
-              {obra.materialConteudo}
+              {separacao.material_conteudo}
             </pre>
           </div>
         </div>

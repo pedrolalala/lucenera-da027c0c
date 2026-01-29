@@ -33,6 +33,12 @@ export function CodeInput({
     inputRef.current?.focus();
   };
 
+  // Only allow numeric input
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const numericValue = e.target.value.replace(/\D/g, '');
+    onChange(numericValue);
+  };
+
   const getBorderClass = () => {
     switch (validationState) {
       case 'success':
@@ -54,12 +60,14 @@ export function CodeInput({
         <Input
           ref={inputRef}
           type="text"
-          inputMode="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={6}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           onBlur={onValidate}
-          placeholder="Digite ou escaneie o código"
+          placeholder="Ex: 26001, 26122"
           disabled={validationState === 'loading'}
           className={cn(
             'h-14 text-lg pr-24 border-2 rounded-xl transition-all',
