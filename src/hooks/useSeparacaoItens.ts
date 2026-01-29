@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SeparacaoItem {
@@ -13,17 +13,12 @@ export interface SeparacaoItem {
   created_at: string;
 }
 
-export function useSeparacaoItens(separacaoId: string | null) {
+export function useSeparacaoItens(separacaoId?: string | null) {
   const [items, setItems] = useState<SeparacaoItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchItems = async () => {
-    if (!separacaoId) {
-      setItems([]);
-      return;
-    }
-
+  const fetchItemsById = useCallback(async (id: string): Promise<SeparacaoItem[]> => {
     setIsLoading(true);
     setError(null);
 
@@ -31,22 +26,35 @@ export function useSeparacaoItens(separacaoId: string | null) {
       const { data, error: fetchError } = await supabase
         .from('separacao_itens')
         .select('*')
-        .eq('separacao_id', separacaoId)
+        .eq('separacao_id', id)
         .order('ordem', { ascending: true });
 
       if (fetchError) throw fetchError;
 
-      setItems((data as SeparacaoItem[]) || []);
+      const fetchedItems = (data as SeparacaoItem[]) || [];
+      setItems(fetchedItems);
+      return fetchedItems;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar itens';
       setError(message);
+      return [];
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  const fetchItems = useCallback(async () => {
+    if (!separacaoId) {
+      setItems([]);
+      return;
+    }
+    await fetchItemsById(separacaoId);
+  }, [separacaoId, fetchItemsById]);
 
   useEffect(() => {
-    fetchItems();
+    if (separacaoId) {
+      fetchItems();
+    }
   }, [separacaoId]);
 
   return {
@@ -54,5 +62,6 @@ export function useSeparacaoItens(separacaoId: string | null) {
     isLoading,
     error,
     refetch: fetchItems,
+    fetchItems: fetchItemsById,
   };
 }

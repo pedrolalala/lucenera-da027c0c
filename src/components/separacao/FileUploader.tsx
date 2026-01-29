@@ -1,14 +1,15 @@
 import { useState, useRef, useCallback } from 'react';
-import { FileText, Image, X, Upload, Loader2 } from 'lucide-react';
+import { FileText, Image, X, Upload, Loader2, ExternalLink } from 'lucide-react';
 
 interface FileUploaderProps {
   type: 'pdf' | 'imagem';
   file: File | null;
   onFileChange: (file: File | null) => void;
   isUploading?: boolean;
+  existingUrl?: string | null;
 }
 
-export function FileUploader({ type, file, onFileChange, isUploading }: FileUploaderProps) {
+export function FileUploader({ type, file, onFileChange, isUploading, existingUrl }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +77,59 @@ export function FileUploader({ type, file, onFileChange, isUploading }: FileUplo
     return mb >= 1 ? `${mb.toFixed(1)}MB` : `${(bytes / 1024).toFixed(0)}KB`;
   };
 
+  // Show existing file from URL
+  if (existingUrl && !file) {
+    const isImage = existingUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+    const fileName = existingUrl.split('/').pop() || 'arquivo';
+
+    return (
+      <div className="border-2 border-dashed border-primary rounded-xl p-6 bg-primary-light/30">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-lg bg-card flex items-center justify-center overflow-hidden">
+            {isImage ? (
+              <img
+                src={existingUrl}
+                alt="Preview"
+                className="w-16 h-16 object-cover rounded-lg"
+              />
+            ) : (
+              <FileText className="w-8 h-8 text-destructive" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{fileName}</p>
+            <p className="text-sm text-muted-foreground">Arquivo atual</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={existingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 text-primary hover:bg-primary/10 rounded-full"
+            >
+              <ExternalLink className="w-5 h-5" />
+            </a>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="text-sm text-primary hover:underline"
+            >
+              Substituir
+            </button>
+          </div>
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={acceptTypes}
+          onChange={handleInputChange}
+          className="hidden"
+        />
+      </div>
+    );
+  }
+
+  // Show selected new file
   if (file) {
     return (
       <div className="border-2 border-dashed border-success rounded-xl p-6 bg-success-light/30">
@@ -111,6 +165,7 @@ export function FileUploader({ type, file, onFileChange, isUploading }: FileUplo
     );
   }
 
+  // Show upload area
   return (
     <div
       onDragOver={handleDragOver}

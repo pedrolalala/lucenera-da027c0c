@@ -6,7 +6,7 @@ import { DateSection } from '@/components/separacao/DateSection';
 import { SeparacaoCard } from '@/components/separacao/SeparacaoCard';
 import { EmptyState } from '@/components/separacao/EmptyState';
 import { LoadingSkeleton } from '@/components/separacao/LoadingSkeleton';
-import { CreateSeparacaoModal } from '@/components/separacao/CreateSeparacaoModal';
+import { SeparacaoFormModal } from '@/components/separacao/SeparacaoFormModal';
 import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
 import { Button } from '@/components/ui/button';
 import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
@@ -16,7 +16,8 @@ import { format, subDays, subMonths, isAfter, startOfDay, parseISO } from 'date-
 export default function SeparacaoPage() {
   const { separacoes, isLoading, updateStatus, refetch } = useSeparacoes();
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingSeparacao, setEditingSeparacao] = useState<Separacao | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   
   // Route modal state
@@ -89,15 +90,24 @@ export default function SeparacaoPage() {
     updateStatus(id, newStatus);
   };
 
-  const handleCreateSuccess = () => {
+  const handleFormSuccess = () => {
     refetch();
-    // Highlight the newest separacao
-    if (separacoes.length > 0) {
-      const newestId = separacoes[0]?.id;
-      if (newestId) {
-        setHighlightedId(newestId);
-      }
-    }
+    setEditingSeparacao(null);
+  };
+
+  const handleOpenCreate = () => {
+    setEditingSeparacao(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenEdit = (separacao: Separacao) => {
+    setEditingSeparacao(separacao);
+    setIsFormModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsFormModalOpen(false);
+    setEditingSeparacao(null);
   };
 
   const handleCreateRoute = (date: Date, deliveries: Separacao[]) => {
@@ -113,7 +123,7 @@ export default function SeparacaoPage() {
             <h1 className="text-2xl font-bold text-foreground">Separação e Entregas</h1>
             <div className="flex items-center gap-3">
               <Button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={handleOpenCreate}
                 className="bg-success hover:bg-success-dark text-success-foreground"
               >
                 <Plus className="w-5 h-5 mr-2 sm:mr-2" />
@@ -145,6 +155,7 @@ export default function SeparacaoPage() {
                   key={separacao.id}
                   separacao={separacao}
                   onStatusChange={handleStatusChange}
+                  onEdit={handleOpenEdit}
                   isHighlighted={separacao.id === highlightedId}
                 />
               ))}
@@ -153,11 +164,12 @@ export default function SeparacaoPage() {
         )}
       </div>
 
-      {/* Create Separacao Modal */}
-      <CreateSeparacaoModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleCreateSuccess}
+      {/* Separacao Form Modal (Create/Edit) */}
+      <SeparacaoFormModal
+        isOpen={isFormModalOpen}
+        onClose={handleCloseModal}
+        onSuccess={handleFormSuccess}
+        editData={editingSeparacao}
       />
 
       {/* Create Route Modal */}

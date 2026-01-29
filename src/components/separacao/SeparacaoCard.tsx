@@ -1,4 +1,4 @@
-import { Phone, MapPin, User, Check, RotateCcw } from 'lucide-react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,18 @@ import { cn } from '@/lib/utils';
 interface SeparacaoCardProps {
   separacao: Separacao;
   onStatusChange: (id: string, newStatus: 'separando' | 'separado') => void;
+  onEdit: (separacao: Separacao) => void;
   isHighlighted?: boolean;
 }
 
-export function SeparacaoCard({ separacao, onStatusChange, isHighlighted }: SeparacaoCardProps) {
+export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted }: SeparacaoCardProps) {
   const handleStatusChange = () => {
     const newStatus = separacao.status === 'separando' ? 'separado' : 'separando';
     onStatusChange(separacao.id, newStatus);
+  };
+
+  const handleEdit = () => {
+    onEdit(separacao);
   };
 
   const handlePhoneClick = () => {
@@ -97,7 +102,16 @@ export function SeparacaoCard({ separacao, onStatusChange, isHighlighted }: Sepa
       />
 
       {/* Actions */}
-      <div className="flex justify-end mt-5">
+      <div className="flex justify-end gap-2 mt-5">
+        <Button
+          onClick={handleEdit}
+          variant="outline"
+          size="sm"
+          className="border-primary text-primary hover:bg-primary-light"
+        >
+          <Pencil className="w-4 h-4 mr-2" />
+          Editar
+        </Button>
         <Button
           onClick={handleStatusChange}
           variant={separacao.status === 'separando' ? 'default' : 'outline'}
