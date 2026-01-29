@@ -1,1 +1,4 @@
 project_id = "lxdaqoqxhyzwqzjpinrj"
+
+[functions.optimize-route]
+verify_jwt = false
