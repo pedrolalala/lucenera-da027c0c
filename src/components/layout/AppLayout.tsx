@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Zap, Truck, LogOut, User } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User } from 'lucide-react';
+import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -50,13 +51,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Zap className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground hidden sm:block">
-                Lucenera
-              </span>
+            <Link to="/" className="flex items-center">
+              <img 
+                src={luceneraHorizontal} 
+                alt="Lucenera" 
+                className="h-7 sm:h-9 w-auto hover:opacity-80 transition-opacity"
+              />
             </Link>
 
             {/* Navigation */}
