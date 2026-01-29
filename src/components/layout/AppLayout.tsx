@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Package, CheckCircle2, Zap } from 'lucide-react';
+import { Package, CheckCircle2, Zap, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -12,6 +12,11 @@ const navItems = [
     label: 'Separação',
     href: '/separacao',
     icon: Package,
+  },
+  {
+    label: 'Registrar',
+    href: '/registrar-entrega',
+    icon: Truck,
   },
   {
     label: 'Finalizadas',

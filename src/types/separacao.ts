@@ -1,4 +1,4 @@
-export type StatusSeparacao = 'separando' | 'separado';
+export type StatusSeparacao = 'separando' | 'separado' | 'finalizado';
 
 export type MaterialTipo = 'texto' | 'imagem' | 'pdf';
 
