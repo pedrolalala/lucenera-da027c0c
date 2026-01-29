@@ -2,6 +2,7 @@ import { Calendar, MapPin, User } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PhotoGallery } from './PhotoGallery';
+import { MaterialDisplay } from '@/components/separacao/MaterialDisplay';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -66,28 +67,23 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
         </div>
       </div>
 
-      {/* Material */}
-      <div className="mb-5">
-        <p className="text-sm font-semibold text-foreground mb-2">Material</p>
-        {entrega.material_tipo === 'texto' && (
-          <div className="bg-muted rounded-lg p-3">
-            <pre className="text-sm text-secondary-foreground whitespace-pre-wrap font-sans">
-              {entrega.material_conteudo}
-            </pre>
-          </div>
-        )}
-      </div>
+      {/* Material Display */}
+      <MaterialDisplay
+        separacaoId={entrega.separacao_id}
+        materialTipo={entrega.material_tipo}
+        materialConteudo={entrega.material_conteudo}
+      />
 
       {/* Photo Gallery */}
       {entrega.fotos_urls.length > 0 && (
-        <div className="mb-5">
+        <div className="mt-5">
           <p className="text-sm font-semibold text-foreground mb-3">Registro Fotográfico</p>
           <PhotoGallery photos={entrega.fotos_urls} />
         </div>
       )}
 
       {/* Observations */}
-      <div>
+      <div className="mt-5">
         <p className="text-sm font-semibold text-foreground mb-2">Observações</p>
         <div className="bg-muted rounded-lg p-4 border border-border">
           {entrega.observacoes ? (

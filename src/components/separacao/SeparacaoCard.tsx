@@ -2,14 +2,16 @@ import { Phone, MapPin, User, Check, RotateCcw } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
+import { MaterialDisplay } from './MaterialDisplay';
 import { cn } from '@/lib/utils';
 
 interface SeparacaoCardProps {
   separacao: Separacao;
   onStatusChange: (id: string, newStatus: 'separando' | 'separado') => void;
+  isHighlighted?: boolean;
 }
 
-export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps) {
+export function SeparacaoCard({ separacao, onStatusChange, isHighlighted }: SeparacaoCardProps) {
   const handleStatusChange = () => {
     const newStatus = separacao.status === 'separando' ? 'separado' : 'separando';
     onStatusChange(separacao.id, newStatus);
@@ -28,7 +30,8 @@ export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps)
     <div
       className={cn(
         'bg-card rounded-xl shadow-card p-5 transition-all duration-300 hover:shadow-card-hover',
-        separacao.status === 'separando' ? 'card-separando' : 'card-separado'
+        separacao.status === 'separando' ? 'card-separando' : 'card-separado',
+        isHighlighted && 'ring-2 ring-primary ring-offset-2 animate-pulse'
       )}
     >
       {/* Header */}
@@ -86,20 +89,15 @@ export function SeparacaoCard({ separacao, onStatusChange }: SeparacaoCardProps)
         </div>
       </div>
 
-      {/* Material */}
-      <div className="mb-5">
-        <p className="text-sm font-semibold text-foreground mb-2">Material a Entregar</p>
-        {separacao.material_tipo === 'texto' && (
-          <div className="bg-muted rounded-lg p-3">
-            <pre className="text-sm text-secondary-foreground whitespace-pre-wrap font-sans">
-              {separacao.material_conteudo}
-            </pre>
-          </div>
-        )}
-      </div>
+      {/* Material Display */}
+      <MaterialDisplay
+        separacaoId={separacao.id}
+        materialTipo={separacao.material_tipo}
+        materialConteudo={separacao.material_conteudo}
+      />
 
       {/* Actions */}
-      <div className="flex justify-end">
+      <div className="flex justify-end mt-5">
         <Button
           onClick={handleStatusChange}
           variant={separacao.status === 'separando' ? 'default' : 'outline'}

@@ -25,10 +25,12 @@ export type Database = {
           id: string
           material_conteudo: string
           material_tipo: string
+          numero_pedido: string | null
           observacoes: string | null
           recebido_por: string
           separacao_id: string
           telefone: string
+          vendedor: string | null
         }
         Insert: {
           cliente: string
@@ -40,10 +42,12 @@ export type Database = {
           id?: string
           material_conteudo: string
           material_tipo: string
+          numero_pedido?: string | null
           observacoes?: string | null
           recebido_por: string
           separacao_id: string
           telefone: string
+          vendedor?: string | null
         }
         Update: {
           cliente?: string
@@ -55,14 +59,60 @@ export type Database = {
           id?: string
           material_conteudo?: string
           material_tipo?: string
+          numero_pedido?: string | null
           observacoes?: string | null
           recebido_por?: string
           separacao_id?: string
           telefone?: string
+          vendedor?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "entregas_finalizadas_separacao_id_fkey"
+            columns: ["separacao_id"]
+            isOneToOne: false
+            referencedRelation: "separacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      separacao_itens: {
+        Row: {
+          codigo_produto: string
+          created_at: string
+          descricao: string
+          id: string
+          id_lote: string | null
+          ordem: number
+          quantidade: number
+          referencia: string
+          separacao_id: string
+        }
+        Insert: {
+          codigo_produto: string
+          created_at?: string
+          descricao: string
+          id?: string
+          id_lote?: string | null
+          ordem?: number
+          quantidade: number
+          referencia: string
+          separacao_id: string
+        }
+        Update: {
+          codigo_produto?: string
+          created_at?: string
+          descricao?: string
+          id?: string
+          id_lote?: string | null
+          ordem?: number
+          quantidade?: number
+          referencia?: string
+          separacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "separacao_itens_separacao_id_fkey"
             columns: ["separacao_id"]
             isOneToOne: false
             referencedRelation: "separacoes"
@@ -80,10 +130,12 @@ export type Database = {
           id: string
           material_conteudo: string
           material_tipo: string
+          numero_pedido: string | null
           responsavel_recebimento: string
           status: string
           telefone: string
           updated_at: string
+          vendedor: string | null
         }
         Insert: {
           cliente: string
@@ -94,10 +146,12 @@ export type Database = {
           id?: string
           material_conteudo: string
           material_tipo?: string
+          numero_pedido?: string | null
           responsavel_recebimento: string
           status?: string
           telefone: string
           updated_at?: string
+          vendedor?: string | null
         }
         Update: {
           cliente?: string
@@ -108,10 +162,12 @@ export type Database = {
           id?: string
           material_conteudo?: string
           material_tipo?: string
+          numero_pedido?: string | null
           responsavel_recebimento?: string
           status?: string
           telefone?: string
           updated_at?: string
+          vendedor?: string | null
         }
         Relationships: []
       }
