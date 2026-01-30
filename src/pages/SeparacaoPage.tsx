@@ -1,7 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, CalendarDays } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { DateRange } from 'react-day-picker';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { DateSection } from '@/components/separacao/DateSection';
 import { SeparacaoCard } from '@/components/separacao/SeparacaoCard';
 import { EmptyState } from '@/components/separacao/EmptyState';
@@ -11,11 +14,13 @@ import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
 import { Button } from '@/components/ui/button';
 import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
 import { FiltroSegmento } from '@/types/separacao';
-import { format, subDays, subMonths, isAfter, startOfDay, parseISO } from 'date-fns';
+import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual } from 'date-fns';
 
 export default function SeparacaoPage() {
+  const navigate = useNavigate();
   const { separacoes, isLoading, updateStatus, refetch } = useSeparacoes();
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSeparacao, setEditingSeparacao] = useState<Separacao | null>(null);
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -35,35 +40,47 @@ export default function SeparacaoPage() {
     }
   }, [highlightedId]);
 
-  // Filter logic
+  // Filter logic - combines segment filter and date range filter
   const filteredSeparacoes = useMemo(() => {
     const today = startOfDay(new Date());
-    let startDate: Date | null = null;
-
-    switch (filtro) {
-      case 'ultima-semana':
-        startDate = subDays(today, 7);
-        break;
-      case 'ultimo-mes':
-        startDate = subMonths(today, 1);
-        break;
-      case 'ultimos-3-meses':
-        startDate = subMonths(today, 3);
-        break;
-      case 'ultimos-6-meses':
-        startDate = subMonths(today, 6);
-        break;
-      default:
-        startDate = null;
-    }
-
+    
     return separacoes.filter((s) => {
-      if (!startDate) return true;
       const entregaDate = startOfDay(parseISO(s.data_entrega));
-      return isAfter(entregaDate, startDate) || 
-             format(entregaDate, 'yyyy-MM-dd') === format(startDate, 'yyyy-MM-dd');
+      
+      // Apply date range filter first if active
+      if (dateRange?.from) {
+        const rangeStart = startOfDay(dateRange.from);
+        const rangeEnd = dateRange.to ? startOfDay(dateRange.to) : rangeStart;
+        
+        const inRange = (isAfter(entregaDate, rangeStart) || isEqual(entregaDate, rangeStart)) &&
+                        (isBefore(entregaDate, rangeEnd) || isEqual(entregaDate, rangeEnd));
+        
+        if (!inRange) return false;
+      }
+      
+      // Apply segment filter
+      let startDate: Date | null = null;
+      switch (filtro) {
+        case 'ultima-semana':
+          startDate = subDays(today, 7);
+          break;
+        case 'ultimo-mes':
+          startDate = subMonths(today, 1);
+          break;
+        case 'ultimos-3-meses':
+          startDate = subMonths(today, 3);
+          break;
+        case 'ultimos-6-meses':
+          startDate = subMonths(today, 6);
+          break;
+        default:
+          startDate = null;
+      }
+
+      if (!startDate) return true;
+      return isAfter(entregaDate, startDate) || isEqual(entregaDate, startDate);
     });
-  }, [separacoes, filtro]);
+  }, [separacoes, filtro, dateRange]);
 
   // Group by date
   const groupedByDate = useMemo(() => {
@@ -119,18 +136,40 @@ export default function SeparacaoPage() {
       {/* Page Header */}
       <div className="sticky top-16 z-40 bg-card border-b border-border shadow-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h1 className="text-2xl font-bold text-foreground">Separação e Entregas</h1>
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={handleOpenCreate}
-                className="bg-success hover:bg-success-dark text-success-foreground"
-              >
-                <Plus className="w-5 h-5 mr-2 sm:mr-2" />
-                <span className="hidden sm:inline">Nova Separação</span>
-                <span className="sm:hidden">Nova</span>
-              </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-foreground">Separação e Entregas</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button
+                  onClick={handleOpenCreate}
+                  className="bg-success hover:bg-success-dark text-success-foreground"
+                >
+                  <Plus className="w-5 h-5 mr-2 sm:mr-2" />
+                  <span className="hidden sm:inline">Nova Separação</span>
+                  <span className="sm:hidden">Nova</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/calendario')}
+                  className="gap-2"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  <span className="hidden sm:inline">Ver em Calendário</span>
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <DateRangePicker
+                value={dateRange}
+                onChange={setDateRange}
+                className="w-full sm:w-auto"
+              />
               <FilterDropdown value={filtro} onChange={setFiltro} />
+              {filteredSeparacoes.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  Mostrando {filteredSeparacoes.length} {filteredSeparacoes.length === 1 ? 'entrega' : 'entregas'}
+                </span>
+              )}
             </div>
           </div>
         </div>

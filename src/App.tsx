@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import LoginPage from "./pages/LoginPage";
 import SeparacaoPage from "./pages/SeparacaoPage";
+import CalendarioPage from "./pages/CalendarioPage";
 import RegistrarEntregaPage from "./pages/RegistrarEntregaPage";
 import EntregasFinalizadasPage from "./pages/EntregasFinalizadasPage";
 import RouteOptimizerPage from "./pages/RouteOptimizerPage";
@@ -32,6 +33,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SeparacaoPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendario"
+              element={
+                <ProtectedRoute>
+                  <CalendarioPage />
                 </ProtectedRoute>
               }
             />
