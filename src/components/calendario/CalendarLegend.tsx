@@ -1,6 +1,8 @@
+import { Check } from 'lucide-react';
+
 export function CalendarLegend() {
   return (
-    <div className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg text-sm">
+    <div className="flex flex-wrap items-center gap-4 p-3 bg-muted/50 rounded-lg text-sm">
       <span className="text-xs uppercase font-semibold text-muted-foreground">Legenda:</span>
       <div className="flex items-center gap-1.5">
         <span className="w-4 h-4 rounded bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-800">
@@ -13,6 +15,12 @@ export function CalendarLegend() {
           N
         </span>
         <span className="text-muted-foreground">Separado</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="w-4 h-4 rounded bg-gray-100 border border-gray-300 flex items-center justify-center">
+          <Check className="w-2.5 h-2.5 text-gray-500" />
+        </span>
+        <span className="text-muted-foreground">Finalizado</span>
       </div>
       <div className="flex items-center gap-1.5">
         <span className="w-4 h-4 rounded border border-border bg-card" />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle } from 'lucide-react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,6 +64,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [dataEntrega, setDataEntrega] = useState('');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('flexible');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [observacoesInternas, setObservacoesInternas] = useState('');
   
   // Material state
   const [materialMethod, setMaterialMethod] = useState<MaterialMethod>(null);
@@ -107,6 +108,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setDataEntrega(editData.data_entrega);
     setDeliveryType((editData as any).delivery_type || 'flexible');
     setScheduledTime((editData as any).scheduled_time?.slice(0, 5) || '');
+    setObservacoesInternas((editData as any).observacoes_internas || '');
     
     // Set material method based on tipo
     const tipo = editData.material_tipo as MaterialTipo;
@@ -292,6 +294,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         material_conteudo: materialConteudo,
         delivery_type: deliveryType,
         scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
+        observacoes_internas: observacoesInternas.trim() || null,
         items: formItems,
       });
       separacaoId = editData.id;
@@ -312,6 +315,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
           material_conteudo: materialConteudo || '',
           delivery_type: deliveryType,
           scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
+          observacoes_internas: observacoesInternas.trim() || null,
           status: 'separando',
         })
         .select('id')
@@ -444,6 +448,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setDataEntrega('');
     setDeliveryType('flexible');
     setScheduledTime('');
+    setObservacoesInternas('');
     setMaterialMethod(null);
     setItems([]);
     setFileItems([]);
@@ -782,7 +787,41 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 </div>
               </section>
 
-              {/* Section 3: Material para Separação */}
+              {/* Section 3: Observações */}
+              <section>
+                <div className="mb-4">
+                  <h3 className="text-base font-semibold flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-amber-500" />
+                    Observações da Entrega (Opcional)
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Informações importantes sobre esta entrega
+                  </p>
+                </div>
+                
+                <div className="relative">
+                  <Textarea
+                    value={observacoesInternas}
+                    onChange={e => {
+                      if (e.target.value.length <= 2000) {
+                        setObservacoesInternas(e.target.value);
+                      }
+                    }}
+                    placeholder={`Exemplos de observações:
+• Obra com acesso difícil - ligar 30 min antes
+• Portaria fecha às 17h
+• Elevador de serviço quebrado - usar escada
+• Cliente pediu priorizar sala de estar
+• Aguardar engenheiro no local`}
+                    className="min-h-[100px] max-h-[200px] resize-y text-[15px] leading-relaxed"
+                  />
+                  <div className={`absolute bottom-2 right-2 text-xs ${observacoesInternas.length >= 2000 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {observacoesInternas.length} / 2000
+                  </div>
+                </div>
+              </section>
+
+              {/* Section 4: Material para Separação */}
               <section>
                 <h3 className="text-base font-semibold mb-5">Material para Separação</h3>
                 

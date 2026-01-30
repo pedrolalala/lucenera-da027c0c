@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, MapPin, User, Phone, Package, Paperclip, FileText, Image, Eye, Expand, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, MapPin, User, Phone, Package, Paperclip, FileText, Image, Eye, Expand, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { useSeparacaoItens } from '@/hooks/useSeparacaoItens';
 import { useSeparacaoArquivos, SeparacaoArquivo } from '@/hooks/useSeparacaoArquivos';
@@ -170,6 +170,23 @@ export function ObraResumoCard({ separacao }: ObraResumoCardProps) {
 
   return (
     <>
+      {/* Observations Alert Card */}
+      {(separacao as any).observacoes_internas && (
+        <div className="bg-amber-50 border-2 border-amber-500 rounded-xl p-4 mb-4 animate-slide-down">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold uppercase text-amber-800 mb-1">
+                Observações Importantes
+              </p>
+              <p className="text-sm text-amber-900">
+                {(separacao as any).observacoes_internas}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="relative bg-primary-light border-2 border-primary rounded-xl p-5 animate-slide-down">
         {/* Success Check Badge */}
         <div className="absolute -top-3 -right-3 w-8 h-8 bg-success rounded-full flex items-center justify-center shadow-md">

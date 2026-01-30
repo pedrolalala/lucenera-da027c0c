@@ -18,6 +18,7 @@ export interface Separacao {
   delivery_type: DeliveryType;
   scheduled_time: string | null;
   order_in_route: number | null;
+  observacoes_internas: string | null;
   created_at: string;
   updated_at: string;
 }

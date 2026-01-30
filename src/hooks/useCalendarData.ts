@@ -8,6 +8,7 @@ export interface DayData {
   total: number;
   separando: number;
   separado: number;
+  finalizado: number;
   entregas: Separacao[];
 }
 
@@ -34,7 +35,6 @@ export function useCalendarData(year: number, month: number) {
         .select('*')
         .gte('data_entrega', format(startDate, 'yyyy-MM-dd'))
         .lte('data_entrega', format(endDate, 'yyyy-MM-dd'))
-        .in('status', ['separando', 'separado'])
         .order('data_entrega', { ascending: true });
 
       if (fetchError) throw fetchError;
@@ -50,6 +50,7 @@ export function useCalendarData(year: number, month: number) {
             total: 0,
             separando: 0,
             separado: 0,
+            finalizado: 0,
             entregas: [],
           };
         }
@@ -59,6 +60,8 @@ export function useCalendarData(year: number, month: number) {
           grouped[dateKey].separando++;
         } else if (entrega.status === 'separado') {
           grouped[dateKey].separado++;
+        } else if (entrega.status === 'finalizado') {
+          grouped[dateKey].finalizado++;
         }
         grouped[dateKey].entregas.push(entrega);
       });

@@ -17,6 +17,7 @@ export interface UpdateSeparacaoData {
   material_conteudo: string | null;
   delivery_type: DeliveryType;
   scheduled_time?: string | null;
+  observacoes_internas?: string | null;
   items?: SeparacaoItem[];
 }
 
@@ -67,6 +68,7 @@ export function useUpdateSeparacao() {
           material_conteudo: data.material_conteudo || '',
           delivery_type: data.delivery_type,
           scheduled_time: data.delivery_type === 'scheduled' ? data.scheduled_time : null,
+          observacoes_internas: data.observacoes_internas || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', data.id);
