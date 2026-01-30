@@ -59,6 +59,7 @@ export function useFinalizarEntrega() {
           material_conteudo: separacao.material_conteudo,
           fotos_urls: fotosUrls,
           observacoes: observacoes.trim() || null,
+          observacoes_internas: (separacao as any).observacoes_internas || null,
         });
 
       if (insertError) {

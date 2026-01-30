@@ -1,4 +1,5 @@
-import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock } from 'lucide-react';
+import { useState } from 'react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,7 @@ interface SeparacaoCardProps {
 }
 
 export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted }: SeparacaoCardProps) {
+  const [showFullObservacoes, setShowFullObservacoes] = useState(false);
   const isScheduled = separacao.delivery_type === 'scheduled';
   
   const handleStatusChange = () => {
@@ -105,6 +107,43 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
           </div>
         </div>
       </div>
+
+      {/* Observations Section */}
+      {separacao.observacoes_internas && (
+        <div className="mb-4">
+          <p className="field-label mb-1 text-amber-600 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            Observações
+          </p>
+          <div className="bg-amber-50 border-l-[3px] border-l-amber-500 rounded-r-md p-3">
+            <p className="text-sm text-amber-900">
+              {separacao.observacoes_internas.length > 200 && !showFullObservacoes ? (
+                <>
+                  {separacao.observacoes_internas.slice(0, 200)}...
+                  <button
+                    onClick={() => setShowFullObservacoes(true)}
+                    className="text-amber-600 font-medium ml-1 hover:underline"
+                  >
+                    Ver mais
+                  </button>
+                </>
+              ) : (
+                <>
+                  {separacao.observacoes_internas}
+                  {separacao.observacoes_internas.length > 200 && (
+                    <button
+                      onClick={() => setShowFullObservacoes(false)}
+                      className="text-amber-600 font-medium ml-1 hover:underline"
+                    >
+                      Ver menos
+                    </button>
+                  )}
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Material Display */}
       <MaterialDisplay

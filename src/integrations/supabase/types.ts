@@ -27,6 +27,7 @@ export type Database = {
           material_tipo: string
           numero_pedido: string | null
           observacoes: string | null
+          observacoes_internas: string | null
           recebido_por: string
           separacao_id: string
           telefone: string
@@ -44,6 +45,7 @@ export type Database = {
           material_tipo: string
           numero_pedido?: string | null
           observacoes?: string | null
+          observacoes_internas?: string | null
           recebido_por: string
           separacao_id: string
           telefone: string
@@ -61,6 +63,7 @@ export type Database = {
           material_tipo?: string
           numero_pedido?: string | null
           observacoes?: string | null
+          observacoes_internas?: string | null
           recebido_por?: string
           separacao_id?: string
           telefone?: string
@@ -173,6 +176,7 @@ export type Database = {
           material_conteudo: string
           material_tipo: string
           numero_pedido: string | null
+          observacoes_internas: string | null
           order_in_route: number | null
           responsavel_recebimento: string
           scheduled_time: string | null
@@ -192,6 +196,7 @@ export type Database = {
           material_conteudo: string
           material_tipo?: string
           numero_pedido?: string | null
+          observacoes_internas?: string | null
           order_in_route?: number | null
           responsavel_recebimento: string
           scheduled_time?: string | null
@@ -211,6 +216,7 @@ export type Database = {
           material_conteudo?: string
           material_tipo?: string
           numero_pedido?: string | null
+          observacoes_internas?: string | null
           order_in_route?: number | null
           responsavel_recebimento?: string
           scheduled_time?: string | null
