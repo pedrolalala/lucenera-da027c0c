@@ -15,6 +15,8 @@ export interface SeparacaoItem {
   quantidade: number;
 }
 
+export type DeliveryType = 'flexible' | 'scheduled';
+
 export interface CreateSeparacaoData {
   codigo_obra: string;
   numero_pedido?: string;
@@ -26,6 +28,8 @@ export interface CreateSeparacaoData {
   endereco: string;
   material_tipo: MaterialTipo;
   material_conteudo: string | null;
+  delivery_type: DeliveryType;
+  scheduled_time?: string | null;
   items?: SeparacaoItem[];
 }
 
@@ -94,6 +98,8 @@ export function useCreateSeparacao() {
           endereco: data.endereco,
           material_tipo: data.material_tipo,
           material_conteudo: data.material_conteudo || '',
+          delivery_type: data.delivery_type,
+          scheduled_time: data.delivery_type === 'scheduled' ? data.scheduled_time : null,
           status: 'separando',
         })
         .select('id')

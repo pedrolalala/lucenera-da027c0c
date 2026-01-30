@@ -1,6 +1,7 @@
-import { Phone, MapPin, User, Check, RotateCcw, Pencil } from 'lucide-react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MaterialDisplay } from './MaterialDisplay';
 import { cn } from '@/lib/utils';
@@ -13,6 +14,8 @@ interface SeparacaoCardProps {
 }
 
 export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted }: SeparacaoCardProps) {
+  const isScheduled = separacao.delivery_type === 'scheduled';
+  
   const handleStatusChange = () => {
     const newStatus = separacao.status === 'separando' ? 'separado' : 'separando';
     onStatusChange(separacao.id, newStatus);
@@ -36,12 +39,21 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
       className={cn(
         'bg-card rounded-xl shadow-card p-5 transition-all duration-300 hover:shadow-card-hover',
         separacao.status === 'separando' ? 'card-separando' : 'card-separado',
+        isScheduled && 'border-l-4 border-l-orange-500',
         isHighlighted && 'ring-2 ring-primary ring-offset-2 animate-pulse'
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <StatusBadge status={separacao.status} />
+        <div className="flex items-center gap-2">
+          <StatusBadge status={separacao.status} />
+          {isScheduled && (
+            <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
+              <Clock className="w-3 h-3 mr-1" />
+              {separacao.scheduled_time?.slice(0, 5)} FIXO
+            </Badge>
+          )}
+        </div>
         <span className="text-sm font-medium text-muted-foreground">
           Código: {separacao.codigo_obra}
         </span>

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Truck, LogOut, User } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User, Route } from 'lucide-react';
 import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +26,11 @@ const navItems = [
     label: 'Finalizadas',
     href: '/entregas-finalizadas',
     icon: CheckCircle2,
+  },
+  {
+    label: 'Rota',
+    href: '/otimizar-rota',
+    icon: Route,
   },
 ];
 

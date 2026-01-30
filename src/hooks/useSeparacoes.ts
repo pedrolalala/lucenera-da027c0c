@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+export type DeliveryType = 'flexible' | 'scheduled';
+
 export interface Separacao {
   id: string;
   cliente: string;
@@ -13,6 +15,9 @@ export interface Separacao {
   status: 'separando' | 'separado' | 'finalizado';
   material_tipo: 'texto' | 'imagem' | 'pdf';
   material_conteudo: string;
+  delivery_type: DeliveryType;
+  scheduled_time: string | null;
+  order_in_route: number | null;
   created_at: string;
   updated_at: string;
 }
