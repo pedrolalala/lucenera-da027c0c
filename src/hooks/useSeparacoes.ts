@@ -13,7 +13,7 @@ export interface Separacao {
   telefone: string;
   endereco: string;
   status: 'separando' | 'separado' | 'finalizado';
-  material_tipo: 'texto' | 'imagem' | 'pdf';
+  material_tipo: 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos';
   material_conteudo: string;
   delivery_type: DeliveryType;
   scheduled_time: string | null;

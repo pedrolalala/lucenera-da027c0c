@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { generateObraCode } from '@/lib/constants';
 
-export type MaterialTipo = 'texto' | 'tabela' | 'pdf' | 'imagem';
+export type MaterialTipo = 'texto' | 'tabela' | 'pdf' | 'imagem' | 'arquivos';
 
 export interface SeparacaoItem {
   id: string;
@@ -37,25 +36,7 @@ export function useCreateSeparacao() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const generateNextCode = async (): Promise<string> => {
-    const currentYear = new Date().getFullYear();
-    const yearPrefix = String(currentYear).slice(-2);
-    
-    const { data, error } = await supabase
-      .from('separacoes')
-      .select('codigo_obra')
-      .like('codigo_obra', `${yearPrefix}%`)
-      .order('codigo_obra', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error('Error fetching last code:', error);
-      return `${yearPrefix}001`;
-    }
-
-    const lastCode = data?.[0]?.codigo_obra || null;
-    return generateObraCode(lastCode);
-  };
+  // Removed auto-generation - user now inputs codigo manually
 
   const uploadMaterial = async (
     file: File,
@@ -159,7 +140,6 @@ export function useCreateSeparacao() {
 
   return {
     createSeparacao,
-    generateNextCode,
     uploadMaterial,
     isSubmitting,
   };

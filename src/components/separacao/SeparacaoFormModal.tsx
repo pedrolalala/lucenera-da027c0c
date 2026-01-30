@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, RefreshCw, Check, Loader2, Table2, Image, FileText, Clipboard, Pencil, Clock, CalendarClock } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCreateSeparacao, MaterialTipo, SeparacaoItem, DeliveryType } from '@/hooks/useCreateSeparacao';
 import { useUpdateSeparacao } from '@/hooks/useUpdateSeparacao';
 import { useSeparacaoItens } from '@/hooks/useSeparacaoItens';
+import { useSeparacaoArquivos, SeparacaoArquivo } from '@/hooks/useSeparacaoArquivos';
 import { formatPhoneBR, isValidPhoneBR } from '@/lib/constants';
 import { ItemsTableInput, TableItem } from './ItemsTableInput';
 import { PasteListInput } from './PasteListInput';
-import { FileUploader } from './FileUploader';
+import { MultiFileUploader, FileItem } from './MultiFileUploader';
 import { Separacao } from '@/hooks/useSeparacoes';
+import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface SeparacaoFormModalProps {
   isOpen: boolean;
@@ -22,9 +26,10 @@ interface SeparacaoFormModalProps {
   editData?: Separacao | null;
 }
 
-type MaterialMethod = 'digitar' | 'pdf' | 'imagem' | 'colar' | null;
+type MaterialMethod = 'digitar' | 'arquivos' | 'colar' | null;
 
 interface FormErrors {
+  codigo_obra?: string;
   cliente?: string;
   responsavel?: string;
   telefone?: string;
@@ -33,16 +38,23 @@ interface FormErrors {
   material?: string;
 }
 
+type CodigoStatus = 'empty' | 'valid' | 'invalid' | 'duplicate' | 'checking';
+
 export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: SeparacaoFormModalProps) {
-  const { createSeparacao, generateNextCode, uploadMaterial: uploadCreate, isSubmitting: isCreating } = useCreateSeparacao();
-  const { updateSeparacao, uploadMaterial: uploadUpdate, isSubmitting: isUpdating } = useUpdateSeparacao();
+  const { createSeparacao, isSubmitting: isCreating } = useCreateSeparacao();
+  const { updateSeparacao, isSubmitting: isUpdating } = useUpdateSeparacao();
   const { fetchItems } = useSeparacaoItens();
+  const { fetchArquivos, uploadArquivo, saveArquivos, deleteArquivo, checkCodigoDuplicado } = useSeparacaoArquivos();
+  const { toast } = useToast();
   
   const isEditMode = !!editData;
   const isSubmitting = isCreating || isUpdating;
+  const codigoInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [codigoObra, setCodigoObra] = useState('');
+  const [codigoStatus, setCodigoStatus] = useState<CodigoStatus>('empty');
+  const [codigoChanged, setCodigoChanged] = useState(false);
   const [numeroPedido, setNumeroPedido] = useState('');
   const [vendedor, setVendedor] = useState('');
   const [cliente, setCliente] = useState('');
@@ -52,17 +64,16 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [dataEntrega, setDataEntrega] = useState('');
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('flexible');
   const [scheduledTime, setScheduledTime] = useState('');
+  
   // Material state
   const [materialMethod, setMaterialMethod] = useState<MaterialMethod>(null);
   const [items, setItems] = useState<TableItem[]>([]);
-  const [materialFile, setMaterialFile] = useState<File | null>(null);
-  const [existingMaterialUrl, setExistingMaterialUrl] = useState<string | null>(null);
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [fileItems, setFileItems] = useState<FileItem[]>([]);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   
   // Validation
   const [errors, setErrors] = useState<FormErrors>({});
-  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
 
   // Load data when opening modal
   useEffect(() => {
@@ -70,7 +81,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       if (editData) {
         loadEditData();
       } else {
-        loadNextCode();
+        // Focus on codigo field for create mode
+        setTimeout(() => {
+          codigoInputRef.current?.focus();
+        }, 100);
       }
     }
   }, [isOpen, editData]);
@@ -82,6 +96,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     
     // Set basic fields
     setCodigoObra(editData.codigo_obra);
+    setCodigoStatus('valid');
+    setCodigoChanged(false);
     setNumeroPedido((editData as any).numero_pedido || '');
     setVendedor((editData as any).vendedor || '');
     setCliente(editData.cliente);
@@ -108,24 +124,80 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         quantidade: item.quantidade,
       }));
       setItems(tableItems);
-    } else if (tipo === 'pdf') {
-      setMaterialMethod('pdf');
-      setExistingMaterialUrl(editData.material_conteudo);
-    } else if (tipo === 'imagem') {
-      setMaterialMethod('imagem');
-      setExistingMaterialUrl(editData.material_conteudo);
+    } else if (tipo === 'arquivos' || tipo === 'pdf' || tipo === 'imagem' || tipo === 'texto') {
+      setMaterialMethod('arquivos');
+      // Load existing files
+      const existingFiles = await fetchArquivos(editData.id);
+      const fileItemsList: FileItem[] = existingFiles.map(f => ({
+        id: f.id,
+        nome_arquivo: f.nome_arquivo,
+        tipo_arquivo: f.tipo_arquivo,
+        tamanho_bytes: f.tamanho_bytes,
+        ordem: f.ordem,
+        url_arquivo: f.url_arquivo,
+        status: 'existing',
+        progress: 100,
+      }));
+      
+      // If old single-file format, convert
+      if ((tipo === 'pdf' || tipo === 'imagem') && editData.material_conteudo && fileItemsList.length === 0) {
+        const fileName = editData.material_conteudo.split('/').pop() || 'arquivo';
+        fileItemsList.push({
+          id: 'legacy-1',
+          nome_arquivo: fileName,
+          tipo_arquivo: tipo === 'pdf' ? 'pdf' : 'imagem',
+          tamanho_bytes: 0,
+          ordem: 1,
+          url_arquivo: editData.material_conteudo,
+          status: 'existing',
+          progress: 100,
+        });
+      }
+      
+      setFileItems(fileItemsList);
     }
     
     setIsLoadingData(false);
   };
 
-  const loadNextCode = async () => {
-    setIsGeneratingCode(true);
-    try {
-      const code = await generateNextCode();
-      setCodigoObra(code);
-    } finally {
-      setIsGeneratingCode(false);
+  const handleCodigoChange = (value: string) => {
+    // Only allow numbers, max 6 digits
+    const numericValue = value.replace(/\D/g, '').slice(0, 6);
+    setCodigoObra(numericValue);
+    
+    if (isEditMode && numericValue !== editData?.codigo_obra) {
+      setCodigoChanged(true);
+    } else if (isEditMode) {
+      setCodigoChanged(false);
+    }
+    
+    if (numericValue.length === 0) {
+      setCodigoStatus('empty');
+    } else if (numericValue.length < 5) {
+      setCodigoStatus('invalid');
+    } else {
+      setCodigoStatus('valid');
+    }
+  };
+
+  const handleCodigoBlur = async () => {
+    if (codigoObra.length < 5) {
+      if (codigoObra.length > 0) {
+        setCodigoStatus('invalid');
+        setErrors(prev => ({ ...prev, codigo_obra: 'Código deve ter 5 ou 6 dígitos' }));
+      }
+      return;
+    }
+    
+    setCodigoStatus('checking');
+    setErrors(prev => ({ ...prev, codigo_obra: undefined }));
+    
+    const { exists } = await checkCodigoDuplicado(codigoObra, editData?.id);
+    
+    if (exists) {
+      setCodigoStatus('duplicate');
+    } else {
+      setCodigoStatus('valid');
     }
   };
 
@@ -136,6 +208,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
+    if (codigoObra.length < 5) {
+      newErrors.codigo_obra = 'Código obrigatório (5-6 dígitos)';
+    }
     if (cliente.length < 3) {
       newErrors.cliente = 'Mínimo 3 caracteres';
     }
@@ -162,8 +237,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       newErrors.material = 'Selecione um método de material';
     } else if ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length === 0) {
       newErrors.material = 'Adicione pelo menos 1 item';
-    } else if ((materialMethod === 'pdf' || materialMethod === 'imagem') && !materialFile && !existingMaterialUrl) {
-      newErrors.material = 'Selecione um arquivo';
+    } else if (materialMethod === 'arquivos') {
+      const visibleFiles = fileItems.filter(f => !f.markedForDeletion);
+      if (visibleFiles.length === 0) {
+        newErrors.material = 'Adicione pelo menos 1 arquivo';
+      }
     }
 
     setErrors(newErrors);
@@ -173,26 +251,14 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    let materialTipo: MaterialTipo = 'texto';
-    let materialConteudo: string | null = existingMaterialUrl;
+    let materialTipo: MaterialTipo = 'tabela';
+    let materialConteudo: string | null = null;
 
-    // Handle file upload if new file selected
-    if ((materialMethod === 'pdf' || materialMethod === 'imagem') && materialFile) {
-      setIsUploadingFile(true);
-      try {
-        const uploadFn = isEditMode ? uploadUpdate : uploadCreate;
-        materialConteudo = await uploadFn(materialFile, codigoObra, materialMethod);
-        materialTipo = materialMethod;
-      } catch (error) {
-        setIsUploadingFile(false);
-        return;
-      }
-      setIsUploadingFile(false);
-    } else if ((materialMethod === 'pdf' || materialMethod === 'imagem') && existingMaterialUrl) {
-      materialTipo = materialMethod;
-      materialConteudo = existingMaterialUrl;
-    } else if (materialMethod === 'digitar' || materialMethod === 'colar') {
+    if (materialMethod === 'digitar' || materialMethod === 'colar') {
       materialTipo = 'tabela';
+      materialConteudo = null;
+    } else if (materialMethod === 'arquivos') {
+      materialTipo = 'arquivos' as MaterialTipo;
       materialConteudo = null;
     }
 
@@ -209,6 +275,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       : undefined;
 
     let success: boolean;
+    let separacaoId: string | undefined;
 
     if (isEditMode && editData) {
       success = await updateSeparacao({
@@ -227,35 +294,147 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
         items: formItems,
       });
+      separacaoId = editData.id;
     } else {
-      success = await createSeparacao({
-        codigo_obra: codigoObra,
-        numero_pedido: numeroPedido || undefined,
-        vendedor: vendedor || undefined,
-        cliente,
-        data_entrega: dataEntrega,
-        responsavel_recebimento: responsavel,
-        telefone: telefone.replace(/\D/g, ''),
-        endereco,
-        material_tipo: materialTipo,
-        material_conteudo: materialConteudo,
-        delivery_type: deliveryType,
-        scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
-        items: formItems,
+      // For create, we need to get the ID back
+      const { data: newSeparacao, error } = await supabase
+        .from('separacoes')
+        .insert({
+          codigo_obra: codigoObra,
+          numero_pedido: numeroPedido || null,
+          vendedor: vendedor || null,
+          cliente,
+          data_entrega: dataEntrega,
+          responsavel_recebimento: responsavel,
+          telefone: telefone.replace(/\D/g, ''),
+          endereco,
+          material_tipo: materialTipo,
+          material_conteudo: materialConteudo || '',
+          delivery_type: deliveryType,
+          scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
+          status: 'separando',
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        toast({
+          title: 'Erro ao criar separação',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      separacaoId = newSeparacao.id;
+
+      // Insert items if table
+      if (materialTipo === 'tabela' && formItems && formItems.length > 0) {
+        const itemsToInsert = formItems.map((item, index) => ({
+          separacao_id: separacaoId,
+          ordem: index + 1,
+          id_lote: item.id_lote || null,
+          codigo_produto: item.codigo_produto,
+          referencia: item.referencia,
+          descricao: item.descricao,
+          quantidade: item.quantidade,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('separacao_itens')
+          .insert(itemsToInsert);
+
+        if (itemsError) {
+          // Rollback
+          await supabase.from('separacoes').delete().eq('id', separacaoId);
+          toast({
+            title: 'Erro ao salvar itens',
+            description: itemsError.message,
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
+      success = true;
+      toast({
+        title: `Separação ${codigoObra} criada com sucesso! 📦`,
+        description: 'A nova separação foi adicionada à lista.',
+        className: 'bg-success text-success-foreground border-none',
       });
+
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
     }
 
-    if (success) {
-      resetForm();
-      setTimeout(() => {
-        onClose();
-        onSuccess();
-      }, 500);
+    if (!success || !separacaoId) return;
+
+    // Handle files if material method is arquivos
+    if (materialMethod === 'arquivos') {
+      setIsUploadingFiles(true);
+
+      // Delete files marked for deletion
+      const filesToDelete = fileItems.filter(f => f.markedForDeletion && f.status === 'existing');
+      for (const file of filesToDelete) {
+        await deleteArquivo(file.id);
+      }
+
+      // Upload new files
+      const newFiles = fileItems.filter(f => f.status === 'pending' && f.file && !f.markedForDeletion);
+      const uploadedFiles: { nome_arquivo: string; tipo_arquivo: 'pdf' | 'imagem'; url_arquivo: string; tamanho_bytes: number; ordem: number }[] = [];
+
+      for (let i = 0; i < newFiles.length; i++) {
+        const file = newFiles[i];
+        try {
+          // Update progress
+          setFileItems(prev => prev.map(f => 
+            f.id === file.id ? { ...f, status: 'uploading', progress: 10 } : f
+          ));
+
+          const url = await uploadArquivo(file.file!, codigoObra, file.ordem, (progress) => {
+            setFileItems(prev => prev.map(f => 
+              f.id === file.id ? { ...f, progress } : f
+            ));
+          });
+
+          setFileItems(prev => prev.map(f => 
+            f.id === file.id ? { ...f, status: 'uploaded', progress: 100, url_arquivo: url } : f
+          ));
+
+          uploadedFiles.push({
+            nome_arquivo: file.nome_arquivo,
+            tipo_arquivo: file.tipo_arquivo,
+            url_arquivo: url,
+            tamanho_bytes: file.tamanho_bytes,
+            ordem: file.ordem,
+          });
+        } catch (error) {
+          setFileItems(prev => prev.map(f => 
+            f.id === file.id ? { ...f, status: 'error', error: 'Falha no upload' } : f
+          ));
+        }
+      }
+
+      // Save file references to database
+      if (uploadedFiles.length > 0) {
+        await saveArquivos(separacaoId, uploadedFiles);
+      }
+
+      setIsUploadingFiles(false);
     }
+
+    resetForm();
+    setTimeout(() => {
+      onClose();
+      onSuccess();
+    }, 300);
   };
 
   const resetForm = () => {
     setCodigoObra('');
+    setCodigoStatus('empty');
+    setCodigoChanged(false);
     setNumeroPedido('');
     setVendedor('');
     setCliente('');
@@ -267,15 +446,14 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setScheduledTime('');
     setMaterialMethod(null);
     setItems([]);
-    setMaterialFile(null);
-    setExistingMaterialUrl(null);
+    setFileItems([]);
     setErrors({});
   };
 
   const handleClose = () => {
     const hasChanges = isEditMode 
-      ? (cliente !== editData?.cliente || responsavel !== editData?.responsavel_recebimento)
-      : (cliente || responsavel || telefone || endereco || items.length > 0 || materialFile);
+      ? (cliente !== editData?.cliente || responsavel !== editData?.responsavel_recebimento || codigoChanged)
+      : (codigoObra || cliente || responsavel || telefone || endereco || items.length > 0 || fileItems.length > 0);
       
     if (hasChanges) {
       if (window.confirm('Descartar alterações?')) {
@@ -295,11 +473,13 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const isFormValid = () => {
     const hasMaterial = 
       ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
-      ((materialMethod === 'pdf' || materialMethod === 'imagem') && (materialFile || existingMaterialUrl));
+      (materialMethod === 'arquivos' && fileItems.filter(f => !f.markedForDeletion).length > 0);
     
     const hasValidSchedule = deliveryType === 'flexible' || (deliveryType === 'scheduled' && scheduledTime);
+    const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
     
     return (
+      hasValidCodigo &&
       cliente.length >= 3 &&
       responsavel.length >= 3 &&
       isValidPhoneBR(telefone) &&
@@ -313,10 +493,24 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
   const materialOptions = [
     { id: 'digitar' as const, icon: Table2, label: 'Digitar Itens', sublabel: 'Item por item' },
-    { id: 'pdf' as const, icon: FileText, label: 'Enviar PDF', sublabel: 'Lista pronta' },
-    { id: 'imagem' as const, icon: Image, label: 'Enviar Imagem', sublabel: 'Foto da lista' },
+    { id: 'arquivos' as const, icon: Paperclip, label: 'Anexar Arquivos', sublabel: 'PDFs/Imagens' },
     { id: 'colar' as const, icon: Clipboard, label: 'Colar Lista', sublabel: 'De Excel/planilha' },
   ];
+
+  const getCodigoBorderClass = () => {
+    switch (codigoStatus) {
+      case 'valid':
+        return 'border-green-500 focus-within:ring-green-500';
+      case 'duplicate':
+        return 'border-amber-500 focus-within:ring-amber-500';
+      case 'invalid':
+        return 'border-destructive focus-within:ring-destructive';
+      case 'checking':
+        return 'border-primary focus-within:ring-primary';
+      default:
+        return '';
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -351,27 +545,46 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Código da Obra */}
                   <div>
-                    <Label className="field-label">Código da Obra</Label>
-                    <div className="relative mt-1.5">
+                    <Label className="field-label">Código da Obra *</Label>
+                    <div className={cn(
+                      "relative mt-1.5 rounded-[10px] border-2 transition-all",
+                      getCodigoBorderClass()
+                    )}>
                       <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                       <Input
+                        ref={codigoInputRef}
                         value={codigoObra}
-                        readOnly
-                        className="h-14 pl-11 text-lg font-bold text-primary bg-muted"
+                        onChange={(e) => handleCodigoChange(e.target.value)}
+                        onBlur={handleCodigoBlur}
+                        placeholder="Digite o código da obra (Ex: 26001, 26122)"
+                        inputMode="numeric"
+                        className="h-14 pl-12 text-lg font-semibold border-0 focus-visible:ring-0"
                       />
-                      {!isEditMode && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={loadNextCode}
-                          disabled={isGeneratingCode}
-                          className="absolute right-2 top-1/2 -translate-y-1/2"
-                        >
-                          <RefreshCw className={`w-4 h-4 ${isGeneratingCode ? 'animate-spin' : ''}`} />
-                        </Button>
+                      {codigoStatus === 'checking' && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-primary" />
                       )}
                     </div>
+                    {/* Status messages */}
+                    {codigoStatus === 'invalid' && codigoObra.length > 0 && (
+                      <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Código deve ter 5 ou 6 dígitos numéricos
+                      </p>
+                    )}
+                    {codigoStatus === 'duplicate' && (
+                      <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Já existe separação com este código. Pode ser uma nova separação para a mesma obra?
+                      </p>
+                    )}
+                    {isEditMode && codigoChanged && codigoStatus === 'valid' && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        • Código será alterado de {editData?.codigo_obra} para {codigoObra}
+                      </p>
+                    )}
+                    {errors.codigo_obra && (
+                      <p className="text-xs text-destructive mt-1">{errors.codigo_obra}</p>
+                    )}
                   </div>
 
                   {/* Data de Entrega */}
@@ -574,7 +787,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 <h3 className="text-base font-semibold mb-5">Material para Separação</h3>
                 
                 {/* Material Method Selection */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                   {materialOptions.map(option => (
                     <button
                       key={option.id}
@@ -584,10 +797,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                           setMaterialMethod(option.id);
                           if (!isEditMode || option.id !== materialMethod) {
                             setItems([]);
-                            setMaterialFile(null);
-                            if (option.id !== 'pdf' && option.id !== 'imagem') {
-                              setExistingMaterialUrl(null);
-                            }
+                            setFileItems([]);
                           }
                         }
                       }}
@@ -617,29 +827,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                   <ItemsTableInput items={items} onItemsChange={setItems} />
                 )}
 
-                {materialMethod === 'pdf' && (
-                  <FileUploader
-                    type="pdf"
-                    file={materialFile}
-                    onFileChange={(file) => {
-                      setMaterialFile(file);
-                      if (file) setExistingMaterialUrl(null);
-                    }}
-                    isUploading={isUploadingFile}
-                    existingUrl={existingMaterialUrl}
-                  />
-                )}
-
-                {materialMethod === 'imagem' && (
-                  <FileUploader
-                    type="imagem"
-                    file={materialFile}
-                    onFileChange={(file) => {
-                      setMaterialFile(file);
-                      if (file) setExistingMaterialUrl(null);
-                    }}
-                    isUploading={isUploadingFile}
-                    existingUrl={existingMaterialUrl}
+                {materialMethod === 'arquivos' && (
+                  <MultiFileUploader
+                    files={fileItems}
+                    onFilesChange={setFileItems}
                   />
                 )}
 
@@ -668,13 +859,13 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
               <Button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!isFormValid() || isSubmitting || isUploadingFile}
+                disabled={!isFormValid() || isSubmitting || isUploadingFiles}
                 className="h-14 px-8 bg-success hover:bg-success-dark text-success-foreground"
               >
-                {isSubmitting || isUploadingFile ? (
+                {isSubmitting || isUploadingFiles ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {isEditMode ? 'Salvando...' : 'Criando...'}
+                    {isUploadingFiles ? 'Enviando arquivos...' : (isEditMode ? 'Salvando...' : 'Criando...')}
                   </>
                 ) : (
                   <>
