@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { ChevronDown, ChevronUp, Package, FileText, Image, ExternalLink } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Package, FileText, Image, ExternalLink, Paperclip, Eye, Expand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useSeparacaoItens } from '@/hooks/useSeparacaoItens';
+import { useSeparacaoArquivos, SeparacaoArquivo } from '@/hooks/useSeparacaoArquivos';
 
 interface MaterialDisplayProps {
   separacaoId: string;
@@ -11,7 +13,30 @@ interface MaterialDisplayProps {
 
 export function MaterialDisplay({ separacaoId, materialTipo, materialConteudo }: MaterialDisplayProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { items, isLoading } = useSeparacaoItens(isExpanded && materialTipo === 'tabela' ? separacaoId : null);
+  const { fetchArquivos } = useSeparacaoArquivos();
+  const [arquivos, setArquivos] = useState<SeparacaoArquivo[]>([]);
+  const [isLoadingArquivos, setIsLoadingArquivos] = useState(false);
+
+  useEffect(() => {
+    if (isExpanded && (materialTipo === 'arquivos' || materialTipo === 'pdf' || materialTipo === 'imagem')) {
+      loadArquivos();
+    }
+  }, [isExpanded, materialTipo, separacaoId]);
+
+  const loadArquivos = async () => {
+    setIsLoadingArquivos(true);
+    const files = await fetchArquivos(separacaoId);
+    setArquivos(files);
+    setIsLoadingArquivos(false);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '';
+    const mb = bytes / (1024 * 1024);
+    return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
+  };
 
   const renderBadge = () => {
     if (materialTipo === 'tabela') {
@@ -19,6 +44,15 @@ export function MaterialDisplay({ separacaoId, materialTipo, materialConteudo }:
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-light text-primary text-sm font-medium">
           <Package className="w-4 h-4" />
           {items.length > 0 ? `${items.length} itens` : 'Itens'}
+        </span>
+      );
+    }
+    
+    if (materialTipo === 'arquivos') {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-light text-primary text-sm font-medium">
+          <Paperclip className="w-4 h-4" />
+          {arquivos.length > 0 ? `${arquivos.length} arquivo${arquivos.length !== 1 ? 's' : ''}` : 'Arquivos'}
         </span>
       );
     }
@@ -111,14 +145,128 @@ export function MaterialDisplay({ separacaoId, materialTipo, materialConteudo }:
       );
     }
 
+    // Handle arquivos type (multiple files)
+    if (materialTipo === 'arquivos') {
+      if (isLoadingArquivos) {
+        return (
+          <div className="mt-4 p-4 bg-muted rounded-lg animate-pulse">
+            <div className="h-12 bg-muted-foreground/20 rounded mb-2"></div>
+            <div className="h-12 bg-muted-foreground/20 rounded mb-2"></div>
+          </div>
+        );
+      }
+
+      if (arquivos.length === 0) {
+        return (
+          <div className="mt-4 p-4 bg-muted rounded-lg text-center text-muted-foreground">
+            Nenhum arquivo encontrado
+          </div>
+        );
+      }
+
+      return (
+        <div className="mt-4 space-y-2 animate-fade-in">
+          {arquivos.map((arquivo) => (
+            <div
+              key={arquivo.id}
+              className="flex items-center gap-3 p-3 bg-muted rounded-lg"
+            >
+              {/* Icon */}
+              <div className="w-8 h-8 rounded bg-background flex items-center justify-center flex-shrink-0">
+                {arquivo.tipo_arquivo === 'pdf' ? (
+                  <FileText className="w-5 h-5 text-red-500" />
+                ) : (
+                  <Image className="w-5 h-5 text-primary" />
+                )}
+              </div>
+
+              {/* File Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{arquivo.nome_arquivo}</p>
+                {arquivo.tamanho_bytes > 0 && (
+                  <p className="text-xs text-muted-foreground">{formatFileSize(arquivo.tamanho_bytes)}</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (arquivo.tipo_arquivo === 'pdf') {
+                    window.open(arquivo.url_arquivo, '_blank');
+                  } else {
+                    setImagePreview(arquivo.url_arquivo);
+                  }
+                }}
+                className="h-8 px-2 text-primary"
+              >
+                {arquivo.tipo_arquivo === 'pdf' ? (
+                  <Eye className="w-4 h-4" />
+                ) : (
+                  <Expand className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // Legacy: single pdf or imagem type
     if (materialTipo === 'pdf' || materialTipo === 'imagem') {
+      // Check if we have arquivos in the new table
+      if (arquivos.length > 0) {
+        return (
+          <div className="mt-4 space-y-2 animate-fade-in">
+            {arquivos.map((arquivo) => (
+              <div
+                key={arquivo.id}
+                className="flex items-center gap-3 p-3 bg-muted rounded-lg"
+              >
+                <div className="w-8 h-8 rounded bg-background flex items-center justify-center flex-shrink-0">
+                  {arquivo.tipo_arquivo === 'pdf' ? (
+                    <FileText className="w-5 h-5 text-red-500" />
+                  ) : (
+                    <Image className="w-5 h-5 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{arquivo.nome_arquivo}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (arquivo.tipo_arquivo === 'pdf') {
+                      window.open(arquivo.url_arquivo, '_blank');
+                    } else {
+                      setImagePreview(arquivo.url_arquivo);
+                    }
+                  }}
+                  className="h-8 px-2 text-primary"
+                >
+                  {arquivo.tipo_arquivo === 'pdf' ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <Expand className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
+      // Fallback to old materialConteudo field
       return (
         <div className="mt-4 p-4 bg-muted rounded-lg animate-fade-in">
           {materialTipo === 'imagem' && materialConteudo && (
             <img
               src={materialConteudo}
               alt="Material"
-              className="max-w-full max-h-64 rounded-lg mb-3 mx-auto"
+              className="max-w-full max-h-64 rounded-lg mb-3 mx-auto cursor-pointer"
+              onClick={() => setImagePreview(materialConteudo)}
             />
           )}
           {materialConteudo && (
@@ -151,33 +299,48 @@ export function MaterialDisplay({ separacaoId, materialTipo, materialConteudo }:
   };
 
   return (
-    <div className="mt-4 pt-4 border-t">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-foreground">Material</span>
-          {renderBadge()}
+    <>
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-foreground">Material</span>
+            {renderBadge()}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-primary hover:text-primary-dark"
+          >
+            {isExpanded ? (
+              <>
+                Recolher
+                <ChevronUp className="w-4 h-4 ml-1" />
+              </>
+            ) : (
+              <>
+                Ver Detalhes
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </>
+            )}
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="text-primary hover:text-primary-dark"
-        >
-          {isExpanded ? (
-            <>
-              Recolher
-              <ChevronUp className="w-4 h-4 ml-1" />
-            </>
-          ) : (
-            <>
-              Ver Detalhes
-              <ChevronDown className="w-4 h-4 ml-1" />
-            </>
-          )}
-        </Button>
+
+        {isExpanded && renderExpandedContent()}
       </div>
 
-      {isExpanded && renderExpandedContent()}
-    </div>
+      {/* Image Preview Modal */}
+      <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

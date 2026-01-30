@@ -1,6 +1,6 @@
 export type StatusSeparacao = 'separando' | 'separado' | 'finalizado';
 
-export type MaterialTipo = 'texto' | 'imagem' | 'pdf';
+export type MaterialTipo = 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos';
 
 export interface Separacao {
   id: string;

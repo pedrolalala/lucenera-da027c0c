@@ -11,7 +11,7 @@ export interface EntregaFinalizada {
   endereco: string;
   recebido_por: string;
   telefone: string;
-  material_tipo: 'texto' | 'imagem' | 'pdf';
+  material_tipo: 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos';
   material_conteudo: string;
   fotos_urls: string[];
   observacoes: string | null;

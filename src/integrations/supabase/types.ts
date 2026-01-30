@@ -76,6 +76,47 @@ export type Database = {
           },
         ]
       }
+      separacao_arquivos: {
+        Row: {
+          created_at: string
+          id: string
+          nome_arquivo: string
+          ordem: number
+          separacao_id: string
+          tamanho_bytes: number
+          tipo_arquivo: string
+          url_arquivo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          ordem?: number
+          separacao_id: string
+          tamanho_bytes: number
+          tipo_arquivo: string
+          url_arquivo: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          ordem?: number
+          separacao_id?: string
+          tamanho_bytes?: number
+          tipo_arquivo?: string
+          url_arquivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "separacao_arquivos_separacao_id_fkey"
+            columns: ["separacao_id"]
+            isOneToOne: false
+            referencedRelation: "separacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       separacao_itens: {
         Row: {
           codigo_produto: string
