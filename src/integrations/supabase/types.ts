@@ -126,12 +126,15 @@ export type Database = {
           codigo_obra: string
           created_at: string
           data_entrega: string
+          delivery_type: string
           endereco: string
           id: string
           material_conteudo: string
           material_tipo: string
           numero_pedido: string | null
+          order_in_route: number | null
           responsavel_recebimento: string
+          scheduled_time: string | null
           status: string
           telefone: string
           updated_at: string
@@ -142,12 +145,15 @@ export type Database = {
           codigo_obra: string
           created_at?: string
           data_entrega: string
+          delivery_type?: string
           endereco: string
           id?: string
           material_conteudo: string
           material_tipo?: string
           numero_pedido?: string | null
+          order_in_route?: number | null
           responsavel_recebimento: string
+          scheduled_time?: string | null
           status?: string
           telefone: string
           updated_at?: string
@@ -158,12 +164,15 @@ export type Database = {
           codigo_obra?: string
           created_at?: string
           data_entrega?: string
+          delivery_type?: string
           endereco?: string
           id?: string
           material_conteudo?: string
           material_tipo?: string
           numero_pedido?: string | null
+          order_in_route?: number | null
           responsavel_recebimento?: string
+          scheduled_time?: string | null
           status?: string
           telefone?: string
           updated_at?: string

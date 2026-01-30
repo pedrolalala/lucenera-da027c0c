@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, RefreshCw, Check, Loader2, Table2, Image, FileText, Clipboard, Pencil } from 'lucide-react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, RefreshCw, Check, Loader2, Table2, Image, FileText, Clipboard, Pencil, Clock, CalendarClock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useCreateSeparacao, MaterialTipo, SeparacaoItem } from '@/hooks/useCreateSeparacao';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useCreateSeparacao, MaterialTipo, SeparacaoItem, DeliveryType } from '@/hooks/useCreateSeparacao';
 import { useUpdateSeparacao } from '@/hooks/useUpdateSeparacao';
 import { useSeparacaoItens } from '@/hooks/useSeparacaoItens';
 import { formatPhoneBR, isValidPhoneBR } from '@/lib/constants';
@@ -49,7 +50,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [telefone, setTelefone] = useState('');
   const [endereco, setEndereco] = useState('');
   const [dataEntrega, setDataEntrega] = useState('');
-  
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>('flexible');
+  const [scheduledTime, setScheduledTime] = useState('');
   // Material state
   const [materialMethod, setMaterialMethod] = useState<MaterialMethod>(null);
   const [items, setItems] = useState<TableItem[]>([]);
@@ -87,6 +89,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setTelefone(formatPhoneBR(editData.telefone));
     setEndereco(editData.endereco);
     setDataEntrega(editData.data_entrega);
+    setDeliveryType((editData as any).delivery_type || 'flexible');
+    setScheduledTime((editData as any).scheduled_time?.slice(0, 5) || '');
     
     // Set material method based on tipo
     const tipo = editData.material_tipo as MaterialTipo;
@@ -146,6 +150,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     }
     if (!dataEntrega) {
       newErrors.data_entrega = 'Data obrigatória';
+    }
+    
+    // Scheduled time validation
+    if (deliveryType === 'scheduled' && !scheduledTime) {
+      newErrors.data_entrega = 'Horário obrigatório para entregas com hora marcada';
     }
 
     // Material validation
@@ -214,6 +223,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         endereco,
         material_tipo: materialTipo,
         material_conteudo: materialConteudo,
+        delivery_type: deliveryType,
+        scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
         items: formItems,
       });
     } else {
@@ -228,6 +239,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         endereco,
         material_tipo: materialTipo,
         material_conteudo: materialConteudo,
+        delivery_type: deliveryType,
+        scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
         items: formItems,
       });
     }
@@ -250,6 +263,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setTelefone('');
     setEndereco('');
     setDataEntrega('');
+    setDeliveryType('flexible');
+    setScheduledTime('');
     setMaterialMethod(null);
     setItems([]);
     setMaterialFile(null);
@@ -282,12 +297,15 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
       ((materialMethod === 'pdf' || materialMethod === 'imagem') && (materialFile || existingMaterialUrl));
     
+    const hasValidSchedule = deliveryType === 'flexible' || (deliveryType === 'scheduled' && scheduledTime);
+    
     return (
       cliente.length >= 3 &&
       responsavel.length >= 3 &&
       isValidPhoneBR(telefone) &&
       endereco.length >= 10 &&
       dataEntrega &&
+      hasValidSchedule &&
       materialMethod &&
       hasMaterial
     );
@@ -372,6 +390,78 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                       <p className="text-xs text-destructive mt-1">{errors.data_entrega}</p>
                     )}
                   </div>
+
+                  {/* Tipo de Entrega */}
+                  <div className="md:col-span-2">
+                    <Label className="field-label">Tipo de Entrega *</Label>
+                    <RadioGroup 
+                      value={deliveryType} 
+                      onValueChange={(v) => setDeliveryType(v as DeliveryType)}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2"
+                    >
+                      <label
+                        className={`
+                          flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+                          ${deliveryType === 'flexible' 
+                            ? 'border-blue-500 bg-blue-50' 
+                            : 'border-border hover:border-blue-300'
+                          }
+                        `}
+                      >
+                        <RadioGroupItem value="flexible" id="flexible" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-5 h-5 text-blue-500" />
+                            <span className="font-medium">Flexível</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Pode entregar a qualquer horário do dia
+                          </p>
+                        </div>
+                      </label>
+                      
+                      <label
+                        className={`
+                          flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all
+                          ${deliveryType === 'scheduled' 
+                            ? 'border-orange-500 bg-orange-50' 
+                            : 'border-border hover:border-orange-300'
+                          }
+                        `}
+                      >
+                        <RadioGroupItem value="scheduled" id="scheduled" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CalendarClock className="w-5 h-5 text-orange-500" />
+                            <span className="font-medium">Hora Marcada</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Cliente tem horário específico
+                          </p>
+                        </div>
+                      </label>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Horário Agendado - aparece apenas se scheduled */}
+                  {deliveryType === 'scheduled' && (
+                    <div className="md:col-span-2 animate-in slide-in-from-top-2 duration-200">
+                      <Label className="field-label">Horário Combinado *</Label>
+                      <div className="relative mt-1.5">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-500" />
+                        <Input
+                          type="time"
+                          value={scheduledTime}
+                          onChange={e => setScheduledTime(e.target.value)}
+                          className="h-14 pl-11 max-w-xs border-orange-300 focus:border-orange-500"
+                          required
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Horário em que o cliente espera receber a entrega
+                      </p>
+                    </div>
+                  )}
 
                   {/* Número do Pedido */}
                   <div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { MaterialTipo, SeparacaoItem } from './useCreateSeparacao';
+import { MaterialTipo, SeparacaoItem, DeliveryType } from './useCreateSeparacao';
 
 export interface UpdateSeparacaoData {
   id: string;
@@ -15,6 +15,8 @@ export interface UpdateSeparacaoData {
   endereco: string;
   material_tipo: MaterialTipo;
   material_conteudo: string | null;
+  delivery_type: DeliveryType;
+  scheduled_time?: string | null;
   items?: SeparacaoItem[];
 }
 
@@ -63,6 +65,8 @@ export function useUpdateSeparacao() {
           endereco: data.endereco,
           material_tipo: data.material_tipo,
           material_conteudo: data.material_conteudo || '',
+          delivery_type: data.delivery_type,
+          scheduled_time: data.delivery_type === 'scheduled' ? data.scheduled_time : null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', data.id);

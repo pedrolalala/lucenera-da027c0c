@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import SeparacaoPage from "./pages/SeparacaoPage";
 import RegistrarEntregaPage from "./pages/RegistrarEntregaPage";
 import EntregasFinalizadasPage from "./pages/EntregasFinalizadasPage";
+import RouteOptimizerPage from "./pages/RouteOptimizerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <EntregasFinalizadasPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/otimizar-rota"
+              element={
+                <ProtectedRoute>
+                  <RouteOptimizerPage />
                 </ProtectedRoute>
               }
             />
