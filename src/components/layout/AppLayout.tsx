@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Truck, LogOut, User, Route } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays } from 'lucide-react';
 import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,11 @@ const navItems = [
     label: 'Separação',
     href: '/separacao',
     icon: Package,
+  },
+  {
+    label: 'Calendário',
+    href: '/calendario',
+    icon: CalendarDays,
   },
   {
     label: 'Registrar',
