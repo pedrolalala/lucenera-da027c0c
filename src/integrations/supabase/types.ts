@@ -22,6 +22,7 @@ export type Database = {
           data_entrega_real: string
           endereco: string
           fotos_urls: string[]
+          gestora_equipe: string | null
           id: string
           material_conteudo: string
           material_tipo: string
@@ -40,6 +41,7 @@ export type Database = {
           data_entrega_real?: string
           endereco: string
           fotos_urls?: string[]
+          gestora_equipe?: string | null
           id?: string
           material_conteudo: string
           material_tipo: string
@@ -58,6 +60,7 @@ export type Database = {
           data_entrega_real?: string
           endereco?: string
           fotos_urls?: string[]
+          gestora_equipe?: string | null
           id?: string
           material_conteudo?: string
           material_tipo?: string
@@ -172,6 +175,7 @@ export type Database = {
           data_entrega: string
           delivery_type: string
           endereco: string
+          gestora_equipe: string
           id: string
           material_conteudo: string
           material_tipo: string
@@ -192,6 +196,7 @@ export type Database = {
           data_entrega: string
           delivery_type?: string
           endereco: string
+          gestora_equipe: string
           id?: string
           material_conteudo: string
           material_tipo?: string
@@ -212,6 +217,7 @@ export type Database = {
           data_entrega?: string
           delivery_type?: string
           endereco?: string
+          gestora_equipe?: string
           id?: string
           material_conteudo?: string
           material_tipo?: string

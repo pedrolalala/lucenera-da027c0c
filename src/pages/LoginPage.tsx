@@ -20,11 +20,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [shake, setShake] = useState(false);
 
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -58,9 +57,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { error } = isSignUp
-        ? await signUp(email, password)
-        : await signIn(email, password);
+      const { error } = await signIn(email, password);
 
       if (error) {
         setShake(true);
@@ -71,12 +68,6 @@ export default function LoginPage() {
           toast({
             title: 'Email ou senha incorretos',
             description: 'Verifique suas credenciais e tente novamente.',
-            variant: 'destructive',
-          });
-        } else if (error.message.includes('User already registered')) {
-          toast({
-            title: 'Usuário já cadastrado',
-            description: 'Este email já está registrado. Tente fazer login.',
             variant: 'destructive',
           });
         } else {
@@ -90,10 +81,8 @@ export default function LoginPage() {
       }
 
       toast({
-        title: isSignUp ? 'Conta criada!' : 'Bem-vindo de volta!',
-        description: isSignUp
-          ? 'Sua conta foi criada com sucesso.'
-          : 'Login realizado com sucesso.',
+        title: 'Bem-vindo de volta!',
+        description: 'Login realizado com sucesso.',
         className: 'bg-success text-success-foreground border-none',
       });
 
@@ -166,7 +155,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                autoComplete="current-password"
                 placeholder="Digite sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -194,17 +183,15 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Forgot Password Link - only show on login */}
-          {!isSignUp && (
-            <div className="text-right">
-              <Link
-                to="#"
-                className="text-sm text-primary hover:underline font-medium"
-              >
-                Esqueci minha senha
-              </Link>
-            </div>
-          )}
+          {/* Forgot Password Link */}
+          <div className="text-right">
+            <Link
+              to="#"
+              className="text-sm text-primary hover:underline font-medium"
+            >
+              Esqueci minha senha
+            </Link>
+          </div>
 
           {/* Submit Button */}
           <Button
@@ -215,30 +202,18 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                {isSignUp ? 'Criando conta...' : 'Entrando...'}
+                Entrando...
               </>
             ) : (
-              isSignUp ? 'Criar conta' : 'Entrar'
+              'Entrar'
             )}
           </Button>
         </form>
 
-        {/* Toggle Sign Up / Sign In */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-muted-foreground">
-            {isSignUp ? 'Já tem uma conta?' : 'Não tem uma conta?'}
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrors({});
-              }}
-              className="ml-1 text-primary hover:underline font-medium"
-            >
-              {isSignUp ? 'Fazer login' : 'Criar conta'}
-            </button>
-          </p>
-        </div>
+        {/* Help Text */}
+        <p className="text-center mt-6 text-xs text-muted-foreground">
+          Acesso restrito a funcionários Lucenera
+        </p>
       </div>
     </div>
   );

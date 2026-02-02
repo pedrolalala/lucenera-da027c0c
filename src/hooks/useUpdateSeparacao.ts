@@ -8,6 +8,7 @@ export interface UpdateSeparacaoData {
   codigo_obra: string;
   numero_pedido?: string;
   vendedor?: string;
+  gestora_equipe: string;
   cliente: string;
   data_entrega: string;
   responsavel_recebimento: string;
@@ -59,6 +60,7 @@ export function useUpdateSeparacao() {
         .update({
           numero_pedido: data.numero_pedido || null,
           vendedor: data.vendedor || null,
+          gestora_equipe: data.gestora_equipe,
           cliente: data.cliente,
           data_entrega: data.data_entrega,
           responsavel_recebimento: data.responsavel_recebimento,

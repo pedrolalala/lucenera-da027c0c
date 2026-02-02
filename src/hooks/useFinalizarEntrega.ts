@@ -60,6 +60,7 @@ export function useFinalizarEntrega() {
           fotos_urls: fotosUrls,
           observacoes: observacoes.trim() || null,
           observacoes_internas: (separacao as any).observacoes_internas || null,
+          gestora_equipe: separacao.gestora_equipe || null,
         });
 
       if (insertError) {

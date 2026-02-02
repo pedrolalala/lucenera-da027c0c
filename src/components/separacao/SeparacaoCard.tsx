@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock, AlertTriangle, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -78,6 +78,15 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
           </div>
         </div>
 
+        {/* Gestora */}
+        <div>
+          <p className="field-label mb-1">Gestora</p>
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4 text-purple-500" />
+            <p className="field-value text-purple-600 font-medium">{separacao.gestora_equipe}</p>
+          </div>
+        </div>
+
         {/* Telefone */}
         <div>
           <p className="field-label mb-1">Telefone</p>
@@ -91,7 +100,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
         </div>
 
         {/* Endereço */}
-        <div>
+        <div className="md:col-span-2">
           <p className="field-label mb-1">Endereço de Entrega</p>
           <div className="flex items-start gap-2">
             <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
