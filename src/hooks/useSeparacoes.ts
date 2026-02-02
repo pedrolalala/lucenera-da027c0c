@@ -19,6 +19,7 @@ export interface Separacao {
   scheduled_time: string | null;
   order_in_route: number | null;
   observacoes_internas: string | null;
+  gestora_equipe: string;
   created_at: string;
   updated_at: string;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare } from 'lucide-react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,7 @@ interface FormErrors {
   endereco?: string;
   data_entrega?: string;
   material?: string;
+  gestora_equipe?: string;
 }
 
 type CodigoStatus = 'empty' | 'valid' | 'invalid' | 'duplicate' | 'checking';
@@ -57,6 +58,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [codigoChanged, setCodigoChanged] = useState(false);
   const [numeroPedido, setNumeroPedido] = useState('');
   const [vendedor, setVendedor] = useState('');
+  const [gestoraEquipe, setGestoraEquipe] = useState('');
   const [cliente, setCliente] = useState('');
   const [responsavel, setResponsavel] = useState('');
   const [telefone, setTelefone] = useState('');
@@ -65,6 +67,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('flexible');
   const [scheduledTime, setScheduledTime] = useState('');
   const [observacoesInternas, setObservacoesInternas] = useState('');
+  
+  const GESTORAS = ['Thais Gomes', 'Thairine Silva', 'Marina Pousa'];
   
   // Material state
   const [materialMethod, setMaterialMethod] = useState<MaterialMethod>(null);
@@ -101,6 +105,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoChanged(false);
     setNumeroPedido((editData as any).numero_pedido || '');
     setVendedor((editData as any).vendedor || '');
+    setGestoraEquipe(editData.gestora_equipe || '');
     setCliente(editData.cliente);
     setResponsavel(editData.responsavel_recebimento);
     setTelefone(formatPhoneBR(editData.telefone));
@@ -213,6 +218,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (codigoObra.length < 5) {
       newErrors.codigo_obra = 'Código obrigatório (5-6 dígitos)';
     }
+    if (!gestoraEquipe) {
+      newErrors.gestora_equipe = 'Selecione a gestora responsável';
+    }
     if (cliente.length < 3) {
       newErrors.cliente = 'Mínimo 3 caracteres';
     }
@@ -285,6 +293,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         codigo_obra: codigoObra,
         numero_pedido: numeroPedido || undefined,
         vendedor: vendedor || undefined,
+        gestora_equipe: gestoraEquipe,
         cliente,
         data_entrega: dataEntrega,
         responsavel_recebimento: responsavel,
@@ -306,6 +315,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
           codigo_obra: codigoObra,
           numero_pedido: numeroPedido || null,
           vendedor: vendedor || null,
+          gestora_equipe: gestoraEquipe,
           cliente,
           data_entrega: dataEntrega,
           responsavel_recebimento: responsavel,
@@ -441,6 +451,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoChanged(false);
     setNumeroPedido('');
     setVendedor('');
+    setGestoraEquipe('');
     setCliente('');
     setResponsavel('');
     setTelefone('');
@@ -485,6 +496,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     
     return (
       hasValidCodigo &&
+      gestoraEquipe &&
       cliente.length >= 3 &&
       responsavel.length >= 3 &&
       isValidPhoneBR(telefone) &&
@@ -707,6 +719,36 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                         className="h-12 pl-11"
                       />
                     </div>
+                  </div>
+
+                  {/* Gestora da Equipe */}
+                  <div>
+                    <Label className="field-label">Gestora da Equipe *</Label>
+                    <div className="relative mt-1.5">
+                      <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
+                      <select
+                        value={gestoraEquipe}
+                        onChange={e => setGestoraEquipe(e.target.value)}
+                        className={cn(
+                          "w-full h-14 pl-11 pr-4 text-base rounded-[10px] border-2 bg-background cursor-pointer appearance-none",
+                          errors.gestora_equipe ? 'border-destructive' : 'border-input',
+                          !gestoraEquipe && 'text-muted-foreground'
+                        )}
+                      >
+                        <option value="">Selecione a gestora...</option>
+                        {GESTORAS.map(g => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    {errors.gestora_equipe && (
+                      <p className="text-xs text-destructive mt-1">{errors.gestora_equipe}</p>
+                    )}
                   </div>
                 </div>
               </section>

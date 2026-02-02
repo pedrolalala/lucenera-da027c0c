@@ -15,6 +15,8 @@ export interface EntregaFinalizada {
   material_conteudo: string;
   fotos_urls: string[];
   observacoes: string | null;
+  observacoes_internas: string | null;
+  gestora_equipe: string | null;
   created_at: string;
 }
 

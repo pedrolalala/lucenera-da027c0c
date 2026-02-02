@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Package, MapPin, User, Phone, Edit, Eye, Map, Check, Clock, AlertTriangle } from 'lucide-react';
+import { Calendar, Package, MapPin, User, Phone, Edit, Eye, Map, Check, Clock, AlertTriangle, Star } from 'lucide-react';
 import { DayData } from '@/hooks/useCalendarData';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { Button } from '@/components/ui/button';
@@ -95,6 +95,10 @@ export function DayDetails({
           <div className="flex items-center gap-2">
             <User className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate">{entrega.responsavel_recebimento}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Star className="w-3.5 h-3.5 flex-shrink-0 text-purple-500" />
+            <span className="truncate text-purple-600">{entrega.gestora_equipe}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />

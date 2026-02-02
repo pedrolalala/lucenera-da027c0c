@@ -1,4 +1,4 @@
-import { Calendar, MapPin, User } from 'lucide-react';
+import { Calendar, MapPin, User, Star } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PhotoGallery } from './PhotoGallery';
@@ -46,14 +46,16 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
           </div>
         </div>
 
-        {/* Endereço */}
-        <div>
-          <p className="field-label mb-1">Endereço</p>
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-            <p className="field-value text-sm">{entrega.endereco}</p>
+        {/* Gestora */}
+        {entrega.gestora_equipe && (
+          <div>
+            <p className="field-label mb-1">Gestora</p>
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-purple-500" />
+              <p className="field-value text-purple-600 font-medium">{entrega.gestora_equipe}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Recebido por */}
         <div>
@@ -63,6 +65,15 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
               <User className="w-3 h-3 text-success" />
             </div>
             <p className="field-value text-success">{entrega.recebido_por}</p>
+          </div>
+        </div>
+
+        {/* Endereço */}
+        <div className="md:col-span-2">
+          <p className="field-label mb-1">Endereço</p>
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+            <p className="field-value text-sm">{entrega.endereco}</p>
           </div>
         </div>
       </div>

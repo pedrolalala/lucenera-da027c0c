@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, MapPin, User, Phone, Package, Paperclip, FileText, Image, Eye, Expand, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Check, MapPin, User, Phone, Package, Paperclip, FileText, Image, Eye, Expand, ChevronDown, ChevronUp, AlertTriangle, Star } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { useSeparacaoItens } from '@/hooks/useSeparacaoItens';
 import { useSeparacaoArquivos, SeparacaoArquivo } from '@/hooks/useSeparacaoArquivos';
@@ -245,6 +245,21 @@ export function ObraResumoCard({ separacao }: ObraResumoCardProps) {
               </button>
             </div>
           </div>
+
+          {/* Gestora */}
+          {separacao.gestora_equipe && (
+            <div>
+              <p className="text-xs uppercase font-semibold text-primary-dark/70 tracking-wide mb-1">
+                Gestora da Equipe
+              </p>
+              <div className="flex items-center gap-2">
+                <Star className="w-4 h-4 text-purple-500 flex-shrink-0" />
+                <p className="text-sm font-medium text-purple-600">
+                  {separacao.gestora_equipe}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Material */}
           <div>
