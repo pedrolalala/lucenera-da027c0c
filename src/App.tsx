@@ -5,12 +5,18 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { AdminRoute } from "@/components/auth/AdminRoute";
 import LoginPage from "./pages/LoginPage";
 import SeparacaoPage from "./pages/SeparacaoPage";
 import CalendarioPage from "./pages/CalendarioPage";
 import RegistrarEntregaPage from "./pages/RegistrarEntregaPage";
 import EntregasFinalizadasPage from "./pages/EntregasFinalizadasPage";
 import RouteOptimizerPage from "./pages/RouteOptimizerPage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
+import AdminDevPage from "./pages/admin/AdminDevPage";
+import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +72,48 @@ const App = () => (
                 <ProtectedRoute>
                   <RouteOptimizerPage />
                 </ProtectedRoute>
+              }
+            />
+            
+            {/* Admin routes */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboardPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/usuarios"
+              element={
+                <AdminRoute>
+                  <AdminUsersPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/configuracoes"
+              element={
+                <AdminRoute>
+                  <AdminSettingsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/desenvolvimento"
+              element={
+                <AdminRoute>
+                  <AdminDevPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/logs"
+              element={
+                <AdminRoute>
+                  <AdminLogsPage />
+                </AdminRoute>
               }
             />
             

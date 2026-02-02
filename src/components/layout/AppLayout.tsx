@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield } from 'lucide-react';
 import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -43,6 +44,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -89,6 +91,22 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </Link>
                 );
               })}
+              
+              {/* Admin Link - only for admins */}
+              {isAdmin && (
+                <Link
+                  to="/admin"
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
+                    location.pathname.startsWith('/admin')
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700'
+                  )}
+                >
+                  <Shield className="w-4 h-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Link>
+              )}
             </nav>
 
             {/* User Menu */}
