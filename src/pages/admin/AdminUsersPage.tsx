@@ -51,11 +51,13 @@ import {
   Trash2,
   Loader2,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  Key
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { ResetPasswordModal } from '@/components/admin/ResetPasswordModal';
 
 interface UserRole {
   id: string;
@@ -75,6 +77,7 @@ export default function AdminUsersPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserRole | null>(null);
   
   // Form state
@@ -367,6 +370,7 @@ export default function AdminUsersPage() {
                               setSelectedUser(user);
                               setIsViewModalOpen(true);
                             }}
+                            title="Ver Perfil"
                           >
                             <Eye className="w-4 h-4 text-blue-600" />
                           </Button>
@@ -383,8 +387,20 @@ export default function AdminUsersPage() {
                               });
                               setIsEditModalOpen(true);
                             }}
+                            title="Editar"
                           >
                             <Pencil className="w-4 h-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsResetPasswordModalOpen(true);
+                            }}
+                            title="Redefinir Senha"
+                          >
+                            <Key className="w-4 h-4 text-orange-500" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -394,6 +410,7 @@ export default function AdminUsersPage() {
                               setSelectedUser(user);
                               setIsDeleteDialogOpen(true);
                             }}
+                            title={user.user_id === currentUser?.id ? "Você não pode excluir sua própria conta" : "Excluir"}
                           >
                             <Trash2 className={`w-4 h-4 ${
                               user.user_id === currentUser?.id 
@@ -707,6 +724,16 @@ export default function AdminUsersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        isOpen={isResetPasswordModalOpen}
+        onClose={() => {
+          setIsResetPasswordModalOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+      />
     </AdminLayout>
   );
 }
