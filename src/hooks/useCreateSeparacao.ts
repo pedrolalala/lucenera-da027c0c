@@ -84,7 +84,7 @@ export function useCreateSeparacao() {
           material_conteudo: data.material_conteudo || '',
           delivery_type: data.delivery_type,
           scheduled_time: data.delivery_type === 'scheduled' ? data.scheduled_time : null,
-          status: 'separando',
+          status: 'material_solicitado', // Valid status per separacoes_status_check constraint
         })
         .select('id')
         .single();
