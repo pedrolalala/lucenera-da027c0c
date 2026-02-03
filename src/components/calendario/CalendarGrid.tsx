@@ -139,62 +139,70 @@ export function CalendarGrid({
     return monthData[dateKey];
   };
 
-  // Group deliveries by status and get dominant complexity
+  // Group deliveries by status AND complexity for individual badges per level
   const getGroupedBadges = (dayData: DayData, isSelected: boolean) => {
     const badges: JSX.Element[] = [];
     
-    // Get the dominant complexity from entregas (most common or default to medio)
-    const getDominantComplexity = (entregas: any[]) => {
+    // Group by status and complexity
+    const getCountsByComplexity = (status: string) => {
+      const entregas = dayData.entregas.filter(e => e.status === status);
       const counts = { facil: 0, medio: 0, dificil: 0 };
       entregas.forEach(e => {
-        const nivel = e.nivel_complexidade || 'medio';
-        if (counts[nivel as keyof typeof counts] !== undefined) {
-          counts[nivel as keyof typeof counts]++;
-        }
+        const nivel = (e.nivel_complexidade || 'medio') as keyof typeof counts;
+        if (counts[nivel] !== undefined) counts[nivel]++;
       });
-      return (Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] as 'facil' | 'medio' | 'dificil') || 'medio';
+      return counts;
     };
 
-    // Material Solicitado
+    // Material Solicitado - show separate badge per complexity
     if (dayData.materialSolicitado > 0) {
-      const entregas = dayData.entregas.filter(e => e.status === 'material_solicitado');
-      const nivel = getDominantComplexity(entregas);
-      badges.push(
-        <div
-          key="solicitado"
-          style={getProgressiveBadge('material_solicitado', nivel, dayData.materialSolicitado, isSelected)}
-        >
-          {dayData.materialSolicitado}
-        </div>
-      );
+      const counts = getCountsByComplexity('material_solicitado');
+      (['facil', 'medio', 'dificil'] as const).forEach(nivel => {
+        if (counts[nivel] > 0) {
+          badges.push(
+            <div
+              key={`solicitado-${nivel}`}
+              style={getProgressiveBadge('material_solicitado', nivel, counts[nivel], isSelected)}
+            >
+              {counts[nivel]}
+            </div>
+          );
+        }
+      });
     }
 
-    // Em Separação
+    // Em Separação - show separate badge per complexity
     if (dayData.emSeparacao > 0) {
-      const entregas = dayData.entregas.filter(e => e.status === 'em_separacao');
-      const nivel = getDominantComplexity(entregas);
-      badges.push(
-        <div
-          key="separacao"
-          style={getProgressiveBadge('em_separacao', nivel, dayData.emSeparacao, isSelected)}
-        >
-          {dayData.emSeparacao}
-        </div>
-      );
+      const counts = getCountsByComplexity('em_separacao');
+      (['facil', 'medio', 'dificil'] as const).forEach(nivel => {
+        if (counts[nivel] > 0) {
+          badges.push(
+            <div
+              key={`separacao-${nivel}`}
+              style={getProgressiveBadge('em_separacao', nivel, counts[nivel], isSelected)}
+            >
+              {counts[nivel]}
+            </div>
+          );
+        }
+      });
     }
 
-    // Separado
+    // Separado - show separate badge per complexity
     if (dayData.separado > 0) {
-      const entregas = dayData.entregas.filter(e => e.status === 'separado');
-      const nivel = getDominantComplexity(entregas);
-      badges.push(
-        <div
-          key="separado"
-          style={getProgressiveBadge('separado', nivel, dayData.separado, isSelected)}
-        >
-          {dayData.separado}
-        </div>
-      );
+      const counts = getCountsByComplexity('separado');
+      (['facil', 'medio', 'dificil'] as const).forEach(nivel => {
+        if (counts[nivel] > 0) {
+          badges.push(
+            <div
+              key={`separado-${nivel}`}
+              style={getProgressiveBadge('separado', nivel, counts[nivel], isSelected)}
+            >
+              {counts[nivel]}
+            </div>
+          );
+        }
+      });
     }
 
     // Garantia - Orange solid

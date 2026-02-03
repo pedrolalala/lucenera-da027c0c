@@ -154,10 +154,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoRastreamento((editData as any).codigo_rastreamento || '');
     
     // Set material method based on tipo
-    const tipo = editData.material_tipo as MaterialTipo | null;
-    if (!tipo) {
+    // Cast to string to handle legacy values ('pdf', 'imagem', 'texto') from old records
+    const tipoStr = editData.material_tipo as string | null;
+    if (!tipoStr) {
       setMaterialMethod('sem_material');
-    } else if (tipo === 'tabela') {
+    } else if (tipoStr === 'tabela') {
       setMaterialMethod('digitar');
       const loadedItems = await fetchItems(editData.id);
       const tableItems: TableItem[] = loadedItems.map(item => ({
@@ -170,7 +171,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         quantidade: item.quantidade,
       }));
       setItems(tableItems);
-    } else if (tipo === 'arquivos' || tipo === 'pdf' || tipo === 'imagem' || tipo === 'texto') {
+    } else if (tipoStr === 'arquivos' || tipoStr === 'pdf' || tipoStr === 'imagem' || tipoStr === 'texto') {
+      // Handle both new 'arquivos' type and legacy types
       setMaterialMethod('arquivos');
       const existingFiles = await fetchArquivos(editData.id);
       const fileItemsList: FileItem[] = existingFiles.map(f => ({
@@ -184,12 +186,13 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         progress: 100,
       }));
       
-      if ((tipo === 'pdf' || tipo === 'imagem') && editData.material_conteudo && fileItemsList.length === 0) {
+      // Handle legacy records that stored file URL in material_conteudo
+      if ((tipoStr === 'pdf' || tipoStr === 'imagem') && editData.material_conteudo && fileItemsList.length === 0) {
         const fileName = editData.material_conteudo.split('/').pop() || 'arquivo';
         fileItemsList.push({
           id: 'legacy-1',
           nome_arquivo: fileName,
-          tipo_arquivo: tipo === 'pdf' ? 'pdf' : 'imagem',
+          tipo_arquivo: tipoStr === 'pdf' ? 'pdf' : 'imagem',
           tamanho_bytes: 0,
           ordem: 1,
           url_arquivo: editData.material_conteudo,
@@ -345,6 +348,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // CRITICAL: Determine material_tipo based on user selection
+    // Only valid values: 'tabela', 'arquivos', or null
     let materialTipo: MaterialTipo | null = null;
     let materialConteudo: string | null = null;
 
@@ -352,12 +357,20 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       materialTipo = 'tabela';
       materialConteudo = null;
     } else if (materialMethod === 'arquivos') {
-      materialTipo = 'arquivos' as MaterialTipo;
+      materialTipo = 'arquivos';
       materialConteudo = null;
-    } else if (materialMethod === 'sem_material' || !materialMethod) {
+    } else {
+      // 'sem_material' or no selection = null
       materialTipo = null;
       materialConteudo = null;
     }
+
+    // DEBUG: Log values before saving
+    console.log('[SeparacaoForm] Preparando dados para salvar:');
+    console.log('  material_tipo:', materialTipo, '| typeof:', typeof materialTipo);
+    console.log('  numero_venda:', numerosVenda);
+    console.log('  separacoes_parciais:', separacoesParciais);
+    console.log('  nivel_complexidade:', nivelComplexidade);
 
     const formItems = (materialMethod === 'digitar' || materialMethod === 'colar') 
       ? items.map((item): SeparacaoItem => ({
@@ -400,34 +413,41 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       });
       separacaoId = editData.id;
     } else {
+      // CREATE MODE - Build the data object
+      const insertData = {
+        codigo_obra: codigoObra,
+        numero_venda: numerosVenda,
+        separacoes_parciais: separacoesParciais,
+        solicitante: solicitante || null,
+        gestora_equipe: gestoraEquipe,
+        cliente,
+        data_entrega: dataEntrega,
+        responsavel_recebimento: responsavel,
+        telefone: telefone ? telefone.replace(/\D/g, '') : null,
+        endereco,
+        material_tipo: materialTipo, // 'tabela', 'arquivos', or null
+        material_conteudo: materialConteudo || '',
+        delivery_type: deliveryType,
+        scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
+        observacoes_internas: observacoesInternas.trim() || null,
+        status: 'material_solicitado',
+        nivel_complexidade: nivelComplexidade,
+        tipo_entrega: tipoEntrega,
+        transportadora_nome: tipoEntrega === 'transportadora' ? transportadoraNome : null,
+        codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
+      };
+
+      // DEBUG: Log full insert data
+      console.log('[SeparacaoForm] INSERT data:', JSON.stringify(insertData, null, 2));
+
       const { data: newSeparacao, error } = await supabase
         .from('separacoes')
-        .insert({
-          codigo_obra: codigoObra,
-          numero_venda: numerosVenda,
-          separacoes_parciais: separacoesParciais,
-          solicitante: solicitante || null,
-          gestora_equipe: gestoraEquipe,
-          cliente,
-          data_entrega: dataEntrega,
-          responsavel_recebimento: responsavel,
-          telefone: telefone ? telefone.replace(/\D/g, '') : null,
-          endereco,
-          material_tipo: materialTipo,
-          material_conteudo: materialConteudo || '',
-          delivery_type: deliveryType,
-          scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
-          observacoes_internas: observacoesInternas.trim() || null,
-          status: 'material_solicitado',
-          nivel_complexidade: nivelComplexidade,
-          tipo_entrega: tipoEntrega,
-          transportadora_nome: tipoEntrega === 'transportadora' ? transportadoraNome : null,
-          codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
-        })
+        .insert(insertData)
         .select('id')
         .single();
 
       if (error) {
+        console.error('[SeparacaoForm] INSERT ERROR:', error);
         toast({
           title: 'Erro ao criar separação',
           description: error.message,
@@ -437,6 +457,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       }
 
       separacaoId = newSeparacao.id;
+      console.log('[SeparacaoForm] Separação criada com ID:', separacaoId);
 
       if (materialTipo === 'tabela' && formItems && formItems.length > 0) {
         const itemsToInsert = formItems.map((item, index) => ({

@@ -1,44 +1,62 @@
-import { Check, Package, Loader2, Shield, AlertTriangle } from 'lucide-react';
+import { Check, Shield, AlertTriangle } from 'lucide-react';
 
 export function CalendarLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-4 p-3 bg-muted/50 rounded-lg text-sm">
-      <span className="text-xs uppercase font-semibold text-muted-foreground">Legenda:</span>
-      <div className="flex items-center gap-1.5">
-        <span className="w-4 h-4 rounded bg-purple-100 flex items-center justify-center">
-          <Package className="w-2.5 h-2.5 text-purple-700" />
-        </span>
-        <span className="text-muted-foreground">Solicitado</span>
+    <div className="space-y-3 p-4 bg-muted/50 rounded-lg text-sm">
+      {/* Status Legend */}
+      <div>
+        <span className="text-[11px] uppercase font-semibold text-muted-foreground mb-2 block">Status:</span>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full border-2 border-gray-400 bg-transparent" />
+            <span className="text-muted-foreground text-xs">Solicitado</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full border-2 border-gray-400 bg-gray-200" />
+            <span className="text-muted-foreground text-xs">Em Separação</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-gray-400" />
+            <span className="text-muted-foreground text-xs">Separado</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+              <Shield className="w-3 h-3 text-white" />
+            </span>
+            <span className="text-muted-foreground text-xs">Garantia</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-red-500 border-2 border-dashed border-red-300 flex items-center justify-center animate-pulse">
+              <AlertTriangle className="w-3 h-3 text-white" />
+            </span>
+            <span className="text-muted-foreground text-xs">Pendente</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-gray-300 flex items-center justify-center opacity-60">
+              <Check className="w-3 h-3 text-white" />
+            </span>
+            <span className="text-muted-foreground text-xs">Finalizado</span>
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-4 h-4 rounded bg-blue-100 flex items-center justify-center">
-          <Loader2 className="w-2.5 h-2.5 text-blue-700" />
-        </span>
-        <span className="text-muted-foreground">Em Separação</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-4 h-4 rounded bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-800">
-          N
-        </span>
-        <span className="text-muted-foreground">Separado</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-4 h-4 rounded bg-orange-100 flex items-center justify-center">
-          <Shield className="w-2.5 h-2.5 text-orange-700" />
-        </span>
-        <span className="text-muted-foreground">Garantia</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-4 h-4 rounded bg-red-100 flex items-center justify-center">
-          <AlertTriangle className="w-2.5 h-2.5 text-red-700" />
-        </span>
-        <span className="text-muted-foreground">Pendente</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className="w-4 h-4 rounded bg-gray-100 border border-gray-300 flex items-center justify-center">
-          <Check className="w-2.5 h-2.5 text-gray-500" />
-        </span>
-        <span className="text-muted-foreground">Finalizado</span>
+      
+      {/* Complexity Legend */}
+      <div>
+        <span className="text-[11px] uppercase font-semibold text-muted-foreground mb-2 block">Nível de Complexidade:</span>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-green-500" />
+            <span className="text-muted-foreground text-xs">Fácil</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-yellow-500" />
+            <span className="text-muted-foreground text-xs">Médio</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-red-500" />
+            <span className="text-muted-foreground text-xs">Difícil</span>
+          </div>
+        </div>
       </div>
     </div>
   );
