@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface Delivery {
@@ -24,10 +25,41 @@ interface OptimizeRouteRequest {
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // ============ AUTHENTICATION CHECK ============
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      console.error("Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Autenticação necessária" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+
+    if (claimsError || !claimsData?.claims) {
+      console.error("Authentication failed:", claimsError?.message || "Invalid token");
+      return new Response(
+        JSON.stringify({ error: "Sessão inválida. Faça login novamente." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+    console.log(`Authenticated user: ${userId}`);
+    // ============ END AUTHENTICATION ============
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
@@ -102,7 +134,7 @@ RETORNE EXATAMENTE este formato JSON (sem markdown, sem texto extra):
   "justificativa": "[Breve explicação da lógica de otimização]"
 }`;
 
-    console.log("Calling Lovable AI for route optimization...");
+    console.log(`User ${userId} requesting route optimization for ${deliveries.length} deliveries`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -147,7 +179,7 @@ RETORNE EXATAMENTE este formato JSON (sem markdown, sem texto extra):
       throw new Error("No content in AI response");
     }
 
-    console.log("AI Response:", content);
+    console.log("AI Response received successfully");
 
     // Parse the JSON response from AI
     // Clean up any markdown formatting if present
@@ -188,6 +220,8 @@ RETORNE EXATAMENTE este formato JSON (sem markdown, sem texto extra):
         telefone: originalDelivery?.telefone,
       };
     });
+
+    console.log(`Route optimized successfully for user ${userId}`);
 
     return new Response(
       JSON.stringify(optimizedRoute),
