@@ -233,13 +233,46 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
 
       {/* Client Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-        {/* Número da Venda */}
-        {separacao.numero_venda && (
-          <div>
-            <p className="field-label mb-1">Venda</p>
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-blue-500" />
-              <p className="field-value text-blue-600 font-semibold">{separacao.numero_venda}</p>
+        {/* Números da Venda - Now array displayed as chips */}
+        {separacao.numero_venda && separacao.numero_venda.length > 0 && (
+          <div className="md:col-span-2">
+            <p className="field-label mb-1.5 flex items-center gap-1">
+              <FileText className="w-3 h-3 text-blue-500" />
+              Vendas
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {(Array.isArray(separacao.numero_venda) ? separacao.numero_venda : [separacao.numero_venda]).slice(0, 3).map((venda, idx) => (
+                <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-xl">
+                  {venda}
+                </Badge>
+              ))}
+              {Array.isArray(separacao.numero_venda) && separacao.numero_venda.length > 3 && (
+                <Badge variant="secondary" className="bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-xl">
+                  +{separacao.numero_venda.length - 3} mais
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Separações Parciais - Now displayed inline with vendas */}
+        {separacao.separacoes_parciais && separacao.separacoes_parciais.length > 0 && (
+          <div className="md:col-span-2">
+            <p className="field-label mb-1.5 flex items-center gap-1">
+              <span className="w-3 h-3 text-green-500">🏷️</span>
+              Parciais
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {separacao.separacoes_parciais.slice(0, 3).map((parcial, idx) => (
+                <Badge key={idx} variant="secondary" className="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-xl">
+                  {parcial}
+                </Badge>
+              ))}
+              {separacao.separacoes_parciais.length > 3 && (
+                <Badge variant="secondary" className="bg-green-50 text-green-600 text-xs px-2.5 py-1 rounded-xl">
+                  +{separacao.separacoes_parciais.length - 3} mais
+                </Badge>
+              )}
             </div>
           </div>
         )}
@@ -308,20 +341,6 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
             </div>
           </div>
         </div>
-
-        {/* Separações Parciais */}
-        {separacao.separacoes_parciais && separacao.separacoes_parciais.length > 0 && (
-          <div className="md:col-span-2">
-            <p className="field-label mb-1">Separações Parciais</p>
-            <div className="flex flex-wrap gap-1.5">
-              {separacao.separacoes_parciais.map((parcial, idx) => (
-                <Badge key={idx} variant="secondary" className="bg-gray-100 text-gray-700 text-xs">
-                  {parcial}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Observations Section */}

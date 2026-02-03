@@ -6,7 +6,7 @@ import { MaterialTipo, SeparacaoItem, DeliveryType } from './useCreateSeparacao'
 export interface UpdateSeparacaoData {
   id: string;
   codigo_obra: string;
-  numero_venda?: string;
+  numero_venda?: string[];  // Changed to array
   separacoes_parciais?: string[];
   solicitante?: string;
   gestora_equipe: string;
@@ -64,7 +64,7 @@ export function useUpdateSeparacao() {
         .from('separacoes')
         .update({
           codigo_obra: data.codigo_obra,
-          numero_venda: data.numero_venda || null,
+          numero_venda: data.numero_venda || [],
           separacoes_parciais: data.separacoes_parciais || [],
           solicitante: data.solicitante || null,
           gestora_equipe: data.gestora_equipe,
