@@ -6,9 +6,14 @@ import { Separacao } from './useSeparacoes';
 
 export interface DayData {
   total: number;
-  separando: number;
+  materialSolicitado: number;
+  emSeparacao: number;
   separado: number;
+  garantia: number;
+  pendente: number;
   finalizado: number;
+  // Keep legacy names for backwards compatibility
+  separando: number;
   entregas: Separacao[];
 }
 
@@ -48,21 +53,42 @@ export function useCalendarData(year: number, month: number) {
         if (!grouped[dateKey]) {
           grouped[dateKey] = {
             total: 0,
-            separando: 0,
+            materialSolicitado: 0,
+            emSeparacao: 0,
             separado: 0,
+            garantia: 0,
+            pendente: 0,
             finalizado: 0,
+            separando: 0, // Legacy
             entregas: [],
           };
         }
 
         grouped[dateKey].total++;
-        if (entrega.status === 'separando') {
-          grouped[dateKey].separando++;
-        } else if (entrega.status === 'separado') {
-          grouped[dateKey].separado++;
-        } else if (entrega.status === 'finalizado') {
-          grouped[dateKey].finalizado++;
+        
+        switch (entrega.status) {
+          case 'material_solicitado':
+            grouped[dateKey].materialSolicitado++;
+            grouped[dateKey].separando++; // Legacy compatibility
+            break;
+          case 'em_separacao':
+            grouped[dateKey].emSeparacao++;
+            grouped[dateKey].separando++; // Legacy compatibility
+            break;
+          case 'separado':
+            grouped[dateKey].separado++;
+            break;
+          case 'matheus_separacao_garantia':
+            grouped[dateKey].garantia++;
+            break;
+          case 'pendente':
+            grouped[dateKey].pendente++;
+            break;
+          case 'finalizado':
+            grouped[dateKey].finalizado++;
+            break;
         }
+        
         grouped[dateKey].entregas.push(entrega);
       });
 

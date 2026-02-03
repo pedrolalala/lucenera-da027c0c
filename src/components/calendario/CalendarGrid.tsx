@@ -13,7 +13,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { MonthData } from '@/hooks/useCalendarData';
-import { Flame, Check } from 'lucide-react';
+import { Flame, Check, AlertTriangle, Shield, Package, Loader2 } from 'lucide-react';
 
 interface CalendarGridProps {
   currentMonth: Date;
@@ -116,51 +116,95 @@ export function CalendarGrid({
                 {format(day, 'd')}
               </span>
 
-                {/* Badges */}
-                {hasDeliveries && isCurrentMonth && (
-                  <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
-                    {dayData.separando > 0 && (
-                      <span
-                        className={cn(
-                          'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded',
-                          isSelected
-                            ? 'bg-white/90 text-blue-700'
-                            : 'bg-blue-100 text-blue-800'
-                        )}
-                      >
-                        {dayData.separando}
-                      </span>
-                    )}
-                    {dayData.separado > 0 && (
-                      <span
-                        className={cn(
-                          'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded',
-                          isSelected
-                            ? 'bg-white/90 text-green-700'
-                            : 'bg-green-100 text-green-800'
-                        )}
-                      >
-                        {dayData.separado}
-                      </span>
-                    )}
-                    {dayData.finalizado > 0 && (
-                      <span
-                        className={cn(
-                          'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded flex items-center gap-0.5',
-                          isSelected
-                            ? 'bg-white/90 text-gray-600'
-                            : 'bg-gray-100 text-gray-600 border border-gray-300'
-                        )}
-                      >
-                        {dayData.finalizado}
-                        <Check className="w-2 h-2" />
-                      </span>
-                    )}
-                    {isHighDensity && !isSelected && (
-                      <Flame className="w-3 h-3 text-orange-500" />
-                    )}
-                  </div>
-                )}
+              {/* Badges */}
+              {hasDeliveries && isCurrentMonth && (
+                <div className="flex flex-wrap gap-0.5 mt-1 justify-center">
+                  {/* Material Solicitado - Purple */}
+                  {dayData.materialSolicitado > 0 && (
+                    <span
+                      className={cn(
+                        'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded flex items-center gap-0.5',
+                        isSelected
+                          ? 'bg-white/90 text-purple-700'
+                          : 'bg-purple-100 text-purple-800'
+                      )}
+                    >
+                      {dayData.materialSolicitado}
+                    </span>
+                  )}
+                  {/* Em Separação - Blue */}
+                  {dayData.emSeparacao > 0 && (
+                    <span
+                      className={cn(
+                        'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded',
+                        isSelected
+                          ? 'bg-white/90 text-blue-700'
+                          : 'bg-blue-100 text-blue-800'
+                      )}
+                    >
+                      {dayData.emSeparacao}
+                    </span>
+                  )}
+                  {/* Separado - Green */}
+                  {dayData.separado > 0 && (
+                    <span
+                      className={cn(
+                        'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded',
+                        isSelected
+                          ? 'bg-white/90 text-green-700'
+                          : 'bg-green-100 text-green-800'
+                      )}
+                    >
+                      {dayData.separado}
+                    </span>
+                  )}
+                  {/* Garantia - Orange */}
+                  {dayData.garantia > 0 && (
+                    <span
+                      className={cn(
+                        'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded flex items-center gap-0.5',
+                        isSelected
+                          ? 'bg-white/90 text-orange-700'
+                          : 'bg-orange-100 text-orange-800'
+                      )}
+                    >
+                      <Shield className="w-2 h-2" />
+                      {dayData.garantia}
+                    </span>
+                  )}
+                  {/* Pendente - Red with pulse */}
+                  {dayData.pendente > 0 && (
+                    <span
+                      className={cn(
+                        'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded flex items-center gap-0.5 animate-pulse',
+                        isSelected
+                          ? 'bg-white/90 text-red-700'
+                          : 'bg-red-100 text-red-800'
+                      )}
+                    >
+                      <AlertTriangle className="w-2 h-2" />
+                      {dayData.pendente}
+                    </span>
+                  )}
+                  {/* Finalizado - Gray */}
+                  {dayData.finalizado > 0 && (
+                    <span
+                      className={cn(
+                        'text-[10px] md:text-xs font-bold px-1 md:px-1.5 py-0.5 rounded flex items-center gap-0.5',
+                        isSelected
+                          ? 'bg-white/90 text-gray-600'
+                          : 'bg-gray-100 text-gray-600 border border-gray-300'
+                      )}
+                    >
+                      {dayData.finalizado}
+                      <Check className="w-2 h-2" />
+                    </span>
+                  )}
+                  {isHighDensity && !isSelected && (
+                    <Flame className="w-3 h-3 text-orange-500" />
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

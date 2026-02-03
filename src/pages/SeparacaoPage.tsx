@@ -13,7 +13,7 @@ import { SeparacaoFormModal } from '@/components/separacao/SeparacaoFormModal';
 import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
 import { Button } from '@/components/ui/button';
 import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
-import { FiltroSegmento } from '@/types/separacao';
+import { FiltroSegmento, StatusSeparacao } from '@/types/separacao';
 import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual } from 'date-fns';
 
 export default function SeparacaoPage() {
@@ -103,7 +103,7 @@ export default function SeparacaoPage() {
       }));
   }, [filteredSeparacoes]);
 
-  const handleStatusChange = (id: string, newStatus: 'separando' | 'separado') => {
+  const handleStatusChange = (id: string, newStatus: StatusSeparacao) => {
     updateStatus(id, newStatus);
   };
 

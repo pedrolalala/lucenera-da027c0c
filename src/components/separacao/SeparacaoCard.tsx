@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock, AlertTriangle, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock, AlertTriangle, ChevronDown, ChevronUp, Star, Shield, Package, Loader2 } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MaterialDisplay } from './MaterialDisplay';
+import { StatusSeparacao } from '@/types/separacao';
 import { cn } from '@/lib/utils';
 
 interface SeparacaoCardProps {
   separacao: Separacao;
-  onStatusChange: (id: string, newStatus: 'separando' | 'separado') => void;
+  onStatusChange: (id: string, newStatus: StatusSeparacao) => void;
   onEdit: (separacao: Separacao) => void;
   isHighlighted?: boolean;
 }
@@ -18,9 +19,32 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
   const [showFullObservacoes, setShowFullObservacoes] = useState(false);
   const isScheduled = separacao.delivery_type === 'scheduled';
   
+  const getNextStatus = (): StatusSeparacao | null => {
+    switch (separacao.status) {
+      case 'material_solicitado':
+        return 'em_separacao';
+      case 'em_separacao':
+        return 'separado';
+      case 'separado':
+        return 'em_separacao';
+      case 'matheus_separacao_garantia':
+        return 'separado';
+      case 'pendente':
+        return 'em_separacao';
+      default:
+        return null;
+    }
+  };
+
   const handleStatusChange = () => {
-    const newStatus = separacao.status === 'separando' ? 'separado' : 'separando';
-    onStatusChange(separacao.id, newStatus);
+    const nextStatus = getNextStatus();
+    if (nextStatus) {
+      onStatusChange(separacao.id, nextStatus);
+    }
+  };
+
+  const handleGarantia = () => {
+    onStatusChange(separacao.id, 'matheus_separacao_garantia');
   };
 
   const handleEdit = () => {
@@ -28,7 +52,9 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
   };
 
   const handlePhoneClick = () => {
-    window.location.href = `tel:${separacao.telefone.replace(/\D/g, '')}`;
+    if (separacao.telefone) {
+      window.location.href = `tel:${separacao.telefone.replace(/\D/g, '')}`;
+    }
   };
 
   const handleMapClick = () => {
@@ -36,18 +62,114 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
   };
 
+  const getBorderClass = () => {
+    switch (separacao.status) {
+      case 'material_solicitado':
+        return 'border-l-4 border-l-purple-500';
+      case 'em_separacao':
+        return 'border-l-4 border-l-blue-500';
+      case 'separado':
+        return 'border-l-4 border-l-green-500';
+      case 'matheus_separacao_garantia':
+        return 'border-l-4 border-l-orange-500';
+      case 'pendente':
+        return 'border-l-4 border-l-red-500';
+      default:
+        return '';
+    }
+  };
+
+  const getActionButton = () => {
+    switch (separacao.status) {
+      case 'material_solicitado':
+        return (
+          <Button
+            onClick={handleStatusChange}
+            className="bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            <Loader2 className="w-4 h-4 mr-2" />
+            Iniciar Separação
+          </Button>
+        );
+      case 'em_separacao':
+        return (
+          <div className="flex gap-2">
+            <Button
+              onClick={handleStatusChange}
+              className="bg-success hover:bg-success-dark text-success-foreground"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Marcar como Separado
+            </Button>
+            <Button
+              onClick={handleGarantia}
+              variant="outline"
+              className="border-orange-500 text-orange-600 hover:bg-orange-50"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Garantia
+            </Button>
+          </div>
+        );
+      case 'separado':
+        return (
+          <Button
+            onClick={handleStatusChange}
+            variant="outline"
+            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Voltar para Separação
+          </Button>
+        );
+      case 'matheus_separacao_garantia':
+        return (
+          <div className="flex gap-2">
+            <Button
+              onClick={handleStatusChange}
+              className="bg-success hover:bg-success-dark text-success-foreground"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Marcar como Separado
+            </Button>
+            <Button
+              onClick={() => onStatusChange(separacao.id, 'em_separacao')}
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
+        );
+      case 'pendente':
+        return (
+          <Button
+            onClick={handleStatusChange}
+            variant="outline"
+            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Retomar Separação
+          </Button>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div
       className={cn(
         'bg-card rounded-xl shadow-card p-5 transition-all duration-300 hover:shadow-card-hover',
-        separacao.status === 'separando' ? 'card-separando' : 'card-separado',
-        isScheduled && 'border-l-4 border-l-orange-500',
+        getBorderClass(),
+        isScheduled && 'ring-2 ring-orange-200',
         isHighlighted && 'ring-2 ring-primary ring-offset-2 animate-pulse'
       )}
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <StatusBadge status={separacao.status} />
           {isScheduled && (
             <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300">
@@ -90,13 +212,17 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
         {/* Telefone */}
         <div>
           <p className="field-label mb-1">Telefone</p>
-          <button
-            onClick={handlePhoneClick}
-            className="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
-          >
-            <Phone className="w-4 h-4" />
-            <span className="field-value">{separacao.telefone}</span>
-          </button>
+          {separacao.telefone ? (
+            <button
+              onClick={handlePhoneClick}
+              className="flex items-center gap-2 text-primary hover:text-primary-dark transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              <span className="field-value">{separacao.telefone}</span>
+            </button>
+          ) : (
+            <span className="text-sm text-muted-foreground">Não informado</span>
+          )}
         </div>
 
         {/* Endereço */}
@@ -162,7 +288,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
       />
 
       {/* Actions */}
-      <div className="flex justify-end gap-2 mt-5">
+      <div className="flex justify-end gap-2 mt-5 flex-wrap">
         <Button
           onClick={handleEdit}
           variant="outline"
@@ -172,28 +298,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
           <Pencil className="w-4 h-4 mr-2" />
           Editar
         </Button>
-        <Button
-          onClick={handleStatusChange}
-          variant={separacao.status === 'separando' ? 'default' : 'outline'}
-          className={cn(
-            'transition-all duration-200',
-            separacao.status === 'separando'
-              ? 'bg-success hover:bg-success-dark text-success-foreground'
-              : 'border-primary text-primary hover:bg-primary-light'
-          )}
-        >
-          {separacao.status === 'separando' ? (
-            <>
-              <Check className="w-4 h-4 mr-2" />
-              Marcar como Separado
-            </>
-          ) : (
-            <>
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Voltar para Separando
-            </>
-          )}
-        </Button>
+        {getActionButton()}
       </div>
     </div>
   );

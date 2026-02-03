@@ -82,6 +82,74 @@ export type Database = {
           },
         ]
       }
+      entregas_pendentes: {
+        Row: {
+          cliente: string
+          codigo_obra: string
+          created_at: string | null
+          data_registro: string | null
+          descricao_problema: string
+          endereco: string | null
+          fotos_urls: string[] | null
+          id: string
+          registrado_por: string
+          registrado_por_user_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          responsavel: string | null
+          separacao_id: string
+          status_pendencia: string | null
+          telefone: string | null
+          tipo_problema: string
+        }
+        Insert: {
+          cliente: string
+          codigo_obra: string
+          created_at?: string | null
+          data_registro?: string | null
+          descricao_problema: string
+          endereco?: string | null
+          fotos_urls?: string[] | null
+          id?: string
+          registrado_por: string
+          registrado_por_user_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          responsavel?: string | null
+          separacao_id: string
+          status_pendencia?: string | null
+          telefone?: string | null
+          tipo_problema: string
+        }
+        Update: {
+          cliente?: string
+          codigo_obra?: string
+          created_at?: string | null
+          data_registro?: string | null
+          descricao_problema?: string
+          endereco?: string | null
+          fotos_urls?: string[] | null
+          id?: string
+          registrado_por?: string
+          registrado_por_user_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          responsavel?: string | null
+          separacao_id?: string
+          status_pendencia?: string | null
+          telefone?: string | null
+          tipo_problema?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_pendentes_separacao_id_fkey"
+            columns: ["separacao_id"]
+            isOneToOne: false
+            referencedRelation: "separacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       separacao_arquivos: {
         Row: {
           created_at: string

@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Package, MapPin, User, Phone, Edit, Eye, Map, Check, Clock, AlertTriangle, Star } from 'lucide-react';
+import { Calendar, Package, MapPin, User, Phone, Edit, Eye, Map, Check, Clock, AlertTriangle, Star, Shield, Loader2 } from 'lucide-react';
 import { DayData } from '@/hooks/useCalendarData';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { Button } from '@/components/ui/button';
@@ -58,12 +58,27 @@ export function DayDetails({
   const hasReadyDeliveries = dayData.separado > 0;
 
   // Group by status
-  const separando = dayData.entregas.filter(e => e.status === 'separando');
+  const materialSolicitado = dayData.entregas.filter(e => e.status === 'material_solicitado');
+  const emSeparacao = dayData.entregas.filter(e => e.status === 'em_separacao');
   const separado = dayData.entregas.filter(e => e.status === 'separado');
+  const garantia = dayData.entregas.filter(e => e.status === 'matheus_separacao_garantia');
+  const pendente = dayData.entregas.filter(e => e.status === 'pendente');
   const finalizado = dayData.entregas.filter(e => e.status === 'finalizado');
 
   const renderEntregaCard = (entrega: Separacao, index: number) => {
     const isFinalizado = entrega.status === 'finalizado';
+    
+    const getBorderColor = () => {
+      switch (entrega.status) {
+        case 'material_solicitado': return 'border-l-purple-500';
+        case 'em_separacao': return 'border-l-blue-500';
+        case 'separado': return 'border-l-green-500';
+        case 'matheus_separacao_garantia': return 'border-l-orange-500';
+        case 'pendente': return 'border-l-red-500';
+        case 'finalizado': return 'border-l-gray-400';
+        default: return 'border-l-gray-300';
+      }
+    };
     
     return (
       <div
@@ -71,9 +86,8 @@ export function DayDetails({
         className={cn(
           'bg-card border rounded-lg p-4 shadow-sm transition-all duration-200',
           'border-l-4',
-          entrega.status === 'separando' && 'border-l-blue-500',
-          entrega.status === 'separado' && 'border-l-green-500',
-          entrega.status === 'finalizado' && 'border-l-gray-400 opacity-90 bg-gray-50'
+          getBorderColor(),
+          entrega.status === 'finalizado' && 'opacity-90 bg-gray-50'
         )}
         style={{ animationDelay: `${index * 50}ms` }}
       >
@@ -152,6 +166,29 @@ export function DayDetails({
     );
   };
 
+  const renderGroup = (
+    entregas: Separacao[],
+    label: string,
+    dotColor: string,
+    textColor: string,
+    icon?: React.ReactNode
+  ) => {
+    if (entregas.length === 0) return null;
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          {icon || <span className={cn('w-2 h-2 rounded-full', dotColor)} />}
+          <span className={cn('text-sm font-semibold', textColor)}>
+            {label} ({entregas.length})
+          </span>
+        </div>
+        <div className="space-y-3">
+          {entregas.map((e, i) => renderEntregaCard(e, i))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -167,69 +204,39 @@ export function DayDetails({
 
       {/* Delivery cards by group */}
       <div className="flex-1 overflow-y-auto space-y-6 pr-1">
-        {/* Separando group */}
-        {separando.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-sm font-semibold text-blue-700">
-                Separando ({separando.length})
-              </span>
-            </div>
-            <div className="space-y-3">
-              {separando.map((e, i) => renderEntregaCard(e, i))}
-            </div>
-          </div>
-        )}
-
-        {/* Separado group */}
-        {separado.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
-              <span className="text-sm font-semibold text-green-700">
-                Separado ({separado.length})
-              </span>
-            </div>
-            <div className="space-y-3">
-              {separado.map((e, i) => renderEntregaCard(e, i))}
-            </div>
-          </div>
-        )}
-
-        {/* Finalizado group */}
-        {finalizado.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Check className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-semibold text-gray-600">
-                Finalizadas ({finalizado.length})
-              </span>
-            </div>
-            <div className="space-y-3">
-              {finalizado.map((e, i) => renderEntregaCard(e, i))}
-            </div>
-          </div>
-        )}
+        {renderGroup(materialSolicitado, 'Material Solicitado', 'bg-purple-500', 'text-purple-700')}
+        {renderGroup(emSeparacao, 'Em Separação', 'bg-blue-500', 'text-blue-700')}
+        {renderGroup(separado, 'Separado', 'bg-green-500', 'text-green-700')}
+        {renderGroup(garantia, 'Garantia - Matheus', 'bg-orange-500', 'text-orange-700', <Shield className="w-4 h-4 text-orange-500" />)}
+        {renderGroup(pendente, 'Pendente', 'bg-red-500', 'text-red-700', <AlertTriangle className="w-4 h-4 text-red-500" />)}
+        {renderGroup(finalizado, 'Finalizadas', 'bg-gray-400', 'text-gray-600', <Check className="w-4 h-4 text-gray-500" />)}
       </div>
 
       {/* Summary */}
       <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-        <div className="flex items-center justify-around text-center">
+        <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <span className="block text-2xl font-bold text-foreground">{dayData.total}</span>
+            <span className="block text-xl font-bold text-foreground">{dayData.total}</span>
             <span className="text-xs text-muted-foreground">Total</span>
           </div>
           <div>
-            <span className="block text-2xl font-bold text-blue-600">{dayData.separando}</span>
+            <span className="block text-xl font-bold text-purple-600">{(dayData as any).materialSolicitado || 0}</span>
+            <span className="text-xs text-muted-foreground">Solicitado</span>
+          </div>
+          <div>
+            <span className="block text-xl font-bold text-blue-600">{(dayData as any).emSeparacao || 0}</span>
             <span className="text-xs text-muted-foreground">Separando</span>
           </div>
           <div>
-            <span className="block text-2xl font-bold text-green-600">{dayData.separado}</span>
+            <span className="block text-xl font-bold text-green-600">{dayData.separado}</span>
             <span className="text-xs text-muted-foreground">Separado</span>
           </div>
           <div>
-            <span className="block text-2xl font-bold text-gray-500">{dayData.finalizado}</span>
+            <span className="block text-xl font-bold text-orange-600">{(dayData as any).garantia || 0}</span>
+            <span className="text-xs text-muted-foreground">Garantia</span>
+          </div>
+          <div>
+            <span className="block text-xl font-bold text-gray-500">{dayData.finalizado}</span>
             <span className="text-xs text-muted-foreground">Finalizado</span>
           </div>
         </div>
