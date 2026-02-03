@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, AlertTriangle, Star, Shield, Loader2, FileText, Truck, Package, Building, Mail, Flame, Zap, CheckCircle } from 'lucide-react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, AlertTriangle, Star, Loader2, FileText, Truck, Package, Building, Mail, Flame, Zap, CheckCircle } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -19,34 +19,6 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
   const [showFullObservacoes, setShowFullObservacoes] = useState(false);
   const isScheduled = separacao.delivery_type === 'scheduled';
   
-  const getNextStatus = (): StatusSeparacao | null => {
-    switch (separacao.status) {
-      case 'material_solicitado':
-        return 'em_separacao';
-      case 'em_separacao':
-        return 'separado';
-      case 'separado':
-        return 'em_separacao';
-      case 'matheus_separacao_garantia':
-        return 'separado';
-      case 'pendente':
-        return 'em_separacao';
-      default:
-        return null;
-    }
-  };
-
-  const handleStatusChange = () => {
-    const nextStatus = getNextStatus();
-    if (nextStatus) {
-      onStatusChange(separacao.id, nextStatus);
-    }
-  };
-
-  const handleGarantia = () => {
-    onStatusChange(separacao.id, 'matheus_separacao_garantia');
-  };
-
   const handleEdit = () => {
     onEdit(separacao);
   };
@@ -62,18 +34,15 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
   };
 
+  // Border colors for the 3 main statuses only
   const getBorderClass = () => {
     switch (separacao.status) {
       case 'material_solicitado':
         return 'border-l-4 border-l-purple-500';
       case 'em_separacao':
-        return 'border-l-4 border-l-blue-500';
+        return 'border-l-6 border-l-blue-500';
       case 'separado':
-        return 'border-l-4 border-l-green-500';
-      case 'matheus_separacao_garantia':
-        return 'border-l-4 border-l-orange-500';
-      case 'pendente':
-        return 'border-l-4 border-l-red-500';
+        return 'border-l-6 border-l-green-500';
       default:
         return '';
     }
@@ -126,78 +95,51 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
     );
   };
 
+  // LINEAR 3-STATUS FLOW: Material Solicitado → Em Separação → Separado
   const getActionButton = () => {
     switch (separacao.status) {
       case 'material_solicitado':
+        // Single button: Iniciar Separação (green, full width)
         return (
           <Button
-            onClick={handleStatusChange}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            onClick={() => onStatusChange(separacao.id, 'em_separacao')}
+            className="w-full h-12 bg-green-500 hover:bg-green-600 text-white font-semibold"
           >
             <Loader2 className="w-4 h-4 mr-2" />
             Iniciar Separação
           </Button>
         );
       case 'em_separacao':
+        // Two buttons side by side: Voltar | Separado
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full">
             <Button
-              onClick={handleStatusChange}
-              className="bg-success hover:bg-success-dark text-success-foreground"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Marcar como Separado
-            </Button>
-            <Button
-              onClick={handleGarantia}
+              onClick={() => onStatusChange(separacao.id, 'material_solicitado')}
               variant="outline"
-              className="border-orange-500 text-orange-600 hover:bg-orange-50"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Garantia
-            </Button>
-          </div>
-        );
-      case 'separado':
-        return (
-          <Button
-            onClick={handleStatusChange}
-            variant="outline"
-            className="border-blue-500 text-blue-600 hover:bg-blue-50"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Voltar para Separação
-          </Button>
-        );
-      case 'matheus_separacao_garantia':
-        return (
-          <div className="flex gap-2">
-            <Button
-              onClick={handleStatusChange}
-              className="bg-success hover:bg-success-dark text-success-foreground"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Marcar como Separado
-            </Button>
-            <Button
-              onClick={() => onStatusChange(separacao.id, 'em_separacao')}
-              variant="outline"
-              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              className="flex-1 h-12 border-blue-500 text-blue-600 hover:bg-blue-50"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Voltar
             </Button>
+            <Button
+              onClick={() => onStatusChange(separacao.id, 'separado')}
+              className="flex-1 h-12 bg-green-500 hover:bg-green-600 text-white font-semibold"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Separado
+            </Button>
           </div>
         );
-      case 'pendente':
+      case 'separado':
+        // Single button: Voltar para Em Separação (blue outline, full width)
         return (
           <Button
-            onClick={handleStatusChange}
+            onClick={() => onStatusChange(separacao.id, 'em_separacao')}
             variant="outline"
-            className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            className="w-full h-12 border-blue-500 text-blue-600 hover:bg-blue-50"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            Retomar Separação
+            Voltar para Em Separação
           </Button>
         );
       default:

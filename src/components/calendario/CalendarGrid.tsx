@@ -13,7 +13,7 @@ import {
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { MonthData, DayData } from '@/hooks/useCalendarData';
-import { Flame, Check, AlertTriangle, Shield } from 'lucide-react';
+import { Flame } from 'lucide-react';
 
 interface CalendarGridProps {
   currentMonth: Date;
@@ -140,10 +140,11 @@ export function CalendarGrid({
   };
 
   // Group deliveries by status AND complexity for individual badges per level
+  // ONLY shows the 3 main statuses: material_solicitado, em_separacao, separado
   const getGroupedBadges = (dayData: DayData, isSelected: boolean) => {
     const badges: JSX.Element[] = [];
     
-    // Group by status and complexity
+    // Group by status and complexity - ONLY 3 main statuses
     const getCountsByComplexity = (status: string) => {
       const entregas = dayData.entregas.filter(e => e.status === status);
       const counts = { facil: 0, medio: 0, dificil: 0 };
@@ -205,57 +206,8 @@ export function CalendarGrid({
       });
     }
 
-    // Garantia - Orange solid
-    if (dayData.garantia > 0) {
-      badges.push(
-        <div
-          key="garantia"
-          className={cn(
-            'w-[34px] h-[34px] rounded-full flex items-center justify-center font-bold text-xs',
-            isSelected ? 'bg-white/90 text-orange-700' : 'bg-orange-500 text-white'
-          )}
-        >
-          <Shield className="w-3 h-3 mr-0.5" />
-          {dayData.garantia}
-        </div>
-      );
-    }
-
-    // Pendente - Red with pulse
-    if (dayData.pendente > 0) {
-      badges.push(
-        <div
-          key="pendente"
-          className={cn(
-            'w-[34px] h-[34px] rounded-full flex items-center justify-center font-bold text-xs animate-pulse border-2 border-dashed',
-            isSelected
-              ? 'bg-white/90 text-red-700 border-red-400'
-              : 'bg-red-500 text-white border-red-300'
-          )}
-        >
-          <AlertTriangle className="w-3 h-3 mr-0.5" />
-          {dayData.pendente}
-        </div>
-      );
-    }
-
-    // Finalizado - Gray
-    if (dayData.finalizado > 0) {
-      badges.push(
-        <div
-          key="finalizado"
-          className={cn(
-            'w-[30px] h-[30px] rounded-full flex items-center justify-center font-bold text-[11px] opacity-60',
-            isSelected
-              ? 'bg-white/90 text-gray-600'
-              : 'bg-gray-400 text-white'
-          )}
-        >
-          {dayData.finalizado}
-          <Check className="w-2.5 h-2.5 ml-0.5" />
-        </div>
-      );
-    }
+    // NOTE: Garantia, Pendente, and Finalizado badges REMOVED from calendar
+    // These statuses are handled in other areas (/pendentes, /entregas-finalizadas)
 
     return badges;
   };
