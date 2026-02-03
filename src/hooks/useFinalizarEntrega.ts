@@ -37,12 +37,16 @@ export function useFinalizarEntrega() {
           throw new Error(`Erro ao enviar foto ${i + 1}: ${uploadError.message}`);
         }
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
+        // Get signed URL (expires in 7 days)
+        const { data: urlData, error: signError } = await supabase.storage
           .from('entregas-fotos')
-          .getPublicUrl(filePath);
+          .createSignedUrl(filePath, 604800); // 7 days
 
-        fotosUrls.push(urlData.publicUrl);
+        if (signError) {
+          throw new Error(`Erro ao gerar URL da foto ${i + 1}: ${signError.message}`);
+        }
+
+        fotosUrls.push(urlData.signedUrl);
       }
 
       // ETAPA 2: Inserir registro em entregas_finalizadas
