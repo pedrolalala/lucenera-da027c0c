@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StatusSeparacao, NivelComplexidade, TipoEntrega } from '@/types/separacao';
 
 export type DeliveryType = 'flexible' | 'scheduled';
 
@@ -12,7 +13,7 @@ export interface Separacao {
   responsavel_recebimento: string;
   telefone: string;
   endereco: string;
-  status: 'separando' | 'separado' | 'finalizado';
+  status: StatusSeparacao;
   material_tipo: 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos';
   material_conteudo: string;
   delivery_type: DeliveryType;
@@ -20,6 +21,13 @@ export interface Separacao {
   order_in_route: number | null;
   observacoes_internas: string | null;
   gestora_equipe: string;
+  numero_pedido: string | null;
+  vendedor: string | null;
+  separacoes_parciais: string[];
+  nivel_complexidade: NivelComplexidade;
+  tipo_entrega: TipoEntrega;
+  transportadora_nome: string | null;
+  codigo_rastreamento: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +46,7 @@ export function useSeparacoes() {
       const { data, error: fetchError } = await supabase
         .from('separacoes')
         .select('*')
-        .in('status', ['separando', 'separado'])
+        .in('status', ['material_solicitado', 'em_separacao', 'separado', 'matheus_separacao_garantia', 'pendente'])
         .order('data_entrega', { ascending: true });
 
       if (fetchError) throw fetchError;
@@ -57,7 +65,7 @@ export function useSeparacoes() {
     }
   };
 
-  const updateStatus = async (id: string, newStatus: 'separando' | 'separado') => {
+  const updateStatus = async (id: string, newStatus: StatusSeparacao) => {
     // Optimistic update
     const previousSeparacoes = [...separacoes];
     setSeparacoes(prev =>
@@ -72,9 +80,18 @@ export function useSeparacoes() {
 
       if (updateError) throw updateError;
 
+      const statusLabels: Record<StatusSeparacao, string> = {
+        material_solicitado: 'Material Solicitado',
+        em_separacao: 'Em Separação',
+        separado: 'Separado',
+        matheus_separacao_garantia: 'Garantia - Matheus',
+        pendente: 'Pendente',
+        finalizado: 'Finalizado',
+      };
+
       toast({
         title: 'Status atualizado!',
-        description: `Ordem marcada como "${newStatus === 'separado' ? 'Separado' : 'Separando'}"`,
+        description: `Ordem marcada como "${statusLabels[newStatus]}"`,
         className: 'bg-success text-success-foreground border-none',
       });
     } catch (err) {

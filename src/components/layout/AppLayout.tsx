@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield, AlertTriangle } from 'lucide-react';
 import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +22,12 @@ const navItems = [
     label: 'Calendário',
     href: '/calendario',
     icon: CalendarDays,
+  },
+  {
+    label: 'Pendentes',
+    href: '/pendentes',
+    icon: AlertTriangle,
+    highlight: true,
   },
   {
     label: 'Registrar',
@@ -80,13 +86,17 @@ export function AppLayout({ children }: AppLayoutProps) {
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
+                      'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
                       isActive
-                        ? 'bg-primary-light text-primary-dark'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? item.highlight 
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-primary-light text-primary-dark'
+                        : item.highlight
+                          ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
-                    <item.icon className="w-4 h-4" />
+                    <item.icon className={cn('w-4 h-4', item.highlight && 'text-red-500')} />
                     <span className="hidden sm:inline">{item.label}</span>
                   </Link>
                 );
@@ -97,7 +107,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <Link
                   to="/admin"
                   className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
+                    'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200',
                     location.pathname.startsWith('/admin')
                       ? 'bg-purple-100 text-purple-700'
                       : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700'

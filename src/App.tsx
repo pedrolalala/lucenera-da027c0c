@@ -11,6 +11,7 @@ import SeparacaoPage from "./pages/SeparacaoPage";
 import CalendarioPage from "./pages/CalendarioPage";
 import RegistrarEntregaPage from "./pages/RegistrarEntregaPage";
 import EntregasFinalizadasPage from "./pages/EntregasFinalizadasPage";
+import PendentesPage from "./pages/PendentesPage";
 import RouteOptimizerPage from "./pages/RouteOptimizerPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
@@ -47,6 +48,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <CalendarioPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pendentes"
+              element={
+                <ProtectedRoute>
+                  <PendentesPage />
                 </ProtectedRoute>
               }
             />
