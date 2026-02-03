@@ -56,11 +56,16 @@ export function useCreateSeparacao() {
       throw new Error(`Erro ao enviar arquivo: ${uploadError.message}`);
     }
 
-    const { data: urlData } = supabase.storage
+    // Get signed URL (expires in 7 days)
+    const { data: urlData, error: signError } = await supabase.storage
       .from('materiais-separacao')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 604800); // 7 days
 
-    return urlData.publicUrl;
+    if (signError) {
+      throw new Error(`Erro ao gerar URL do arquivo: ${signError.message}`);
+    }
+
+    return urlData.signedUrl;
   };
 
   const createSeparacao = async (data: CreateSeparacaoData): Promise<boolean> => {
