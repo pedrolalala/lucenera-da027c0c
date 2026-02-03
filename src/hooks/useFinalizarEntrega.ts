@@ -61,7 +61,7 @@ export function useFinalizarEntrega() {
           observacoes: observacoes.trim() || null,
           observacoes_internas: separacao.observacoes_internas || null,
           gestora_equipe: separacao.gestora_equipe || null,
-          numero_pedido: separacao.numero_venda || null,
+          numero_pedido: Array.isArray(separacao.numero_venda) ? separacao.numero_venda.join(', ') : (separacao.numero_venda || null),
           vendedor: separacao.solicitante || null,
         });
 

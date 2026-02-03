@@ -17,6 +17,8 @@ export interface EntregaFinalizada {
   observacoes: string | null;
   observacoes_internas: string | null;
   gestora_equipe: string | null;
+  numero_pedido: string | null;  // Stores joined vendas
+  vendedor: string | null;       // Stores solicitante
   created_at: string;
 }
 

@@ -1,6 +1,7 @@
-import { Calendar, MapPin, User, Star } from 'lucide-react';
+import { Calendar, MapPin, User, Star, FileText } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Badge } from '@/components/ui/badge';
 import { PhotoGallery } from './PhotoGallery';
 import { MaterialDisplay } from '@/components/separacao/MaterialDisplay';
 import { format, parseISO } from 'date-fns';
@@ -17,6 +18,11 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
     { locale: ptBR }
   );
 
+  // Parse numero_pedido back to array for display
+  const vendas = entrega.numero_pedido 
+    ? entrega.numero_pedido.split(', ').filter(v => v.trim())
+    : [];
+
   return (
     <div className="bg-card rounded-xl shadow-card p-6 card-finalizado">
       {/* Header */}
@@ -26,6 +32,28 @@ export function EntregaFinalizadaCard({ entrega }: EntregaFinalizadaCardProps) {
           Código: {entrega.codigo_obra}
         </span>
       </div>
+
+      {/* Vendas Chips */}
+      {vendas.length > 0 && (
+        <div className="mb-4">
+          <p className="field-label mb-1.5 flex items-center gap-1">
+            <FileText className="w-3 h-3 text-blue-500" />
+            Vendas
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {vendas.slice(0, 5).map((venda, idx) => (
+              <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-xl">
+                {venda}
+              </Badge>
+            ))}
+            {vendas.length > 5 && (
+              <Badge variant="secondary" className="bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-xl">
+                +{vendas.length - 5} mais
+              </Badge>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">

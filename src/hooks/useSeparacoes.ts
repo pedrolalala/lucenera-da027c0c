@@ -11,7 +11,7 @@ export interface Separacao {
   codigo_obra: string;
   data_entrega: string;
   responsavel_recebimento: string;
-  telefone: string;
+  telefone: string | null;
   endereco: string;
   status: StatusSeparacao;
   material_tipo: 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos' | null;
@@ -21,7 +21,7 @@ export interface Separacao {
   order_in_route: number | null;
   observacoes_internas: string | null;
   gestora_equipe: string;
-  numero_venda: string | null;
+  numero_venda: string[];  // Changed to array
   solicitante: string | null;
   separacoes_parciais: string[] | null;
   nivel_complexidade: NivelComplexidade | null;

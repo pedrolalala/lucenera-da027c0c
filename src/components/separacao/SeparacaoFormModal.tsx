@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star, Truck, Package, Building, Mail, Zap, Flame, CheckCircle, MinusCircle } from 'lucide-react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star, Truck, Package, Building, Mail, Zap, Flame, CheckCircle, MinusCircle, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,6 @@ import { Separacao } from '@/hooks/useSeparacoes';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
 
 interface SeparacaoFormModalProps {
   isOpen: boolean;
@@ -34,7 +33,7 @@ type TipoEntrega = 'lucenera_entrega' | 'transportadora' | 'cliente_retira' | 'c
 
 interface FormErrors {
   codigo_obra?: string;
-  numero_venda?: string;
+  numeros_venda?: string;
   cliente?: string;
   responsavel?: string;
   telefone?: string;
@@ -59,14 +58,20 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const isEditMode = !!editData;
   const isSubmitting = isCreating || isUpdating;
   const codigoInputRef = useRef<HTMLInputElement>(null);
+  const vendaInputRef = useRef<HTMLInputElement>(null);
+  const parcialInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [codigoObra, setCodigoObra] = useState('');
   const [codigoStatus, setCodigoStatus] = useState<CodigoStatus>('empty');
   const [codigoChanged, setCodigoChanged] = useState(false);
-  const [numeroVenda, setNumeroVenda] = useState('');
+  
+  // DYNAMIC LISTS for Números da Venda and Separações Parciais
+  const [numerosVenda, setNumerosVenda] = useState<string[]>([]);
+  const [vendaInput, setVendaInput] = useState('');
   const [separacoesParciais, setSeparacoesParciais] = useState<string[]>([]);
   const [parcialInput, setParcialInput] = useState('');
+  
   const [solicitante, setSolicitante] = useState('');
   const [gestoraEquipe, setGestoraEquipe] = useState('');
   const [cliente, setCliente] = useState('');
@@ -119,7 +124,17 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoObra(editData.codigo_obra);
     setCodigoStatus('valid');
     setCodigoChanged(false);
-    setNumeroVenda((editData as any).numero_venda || (editData as any).numero_pedido || '');
+    
+    // Handle numero_venda as array
+    const vendaData = (editData as any).numero_venda;
+    if (Array.isArray(vendaData)) {
+      setNumerosVenda(vendaData);
+    } else if (vendaData) {
+      setNumerosVenda([vendaData]);
+    } else {
+      setNumerosVenda([]);
+    }
+    
     setSeparacoesParciais((editData as any).separacoes_parciais || []);
     setSolicitante((editData as any).solicitante || (editData as any).vendedor || '');
     setGestoraEquipe(editData.gestora_equipe || '');
@@ -144,7 +159,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       setMaterialMethod('sem_material');
     } else if (tipo === 'tabela') {
       setMaterialMethod('digitar');
-      // Load items
       const loadedItems = await fetchItems(editData.id);
       const tableItems: TableItem[] = loadedItems.map(item => ({
         id: item.id,
@@ -158,7 +172,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       setItems(tableItems);
     } else if (tipo === 'arquivos' || tipo === 'pdf' || tipo === 'imagem' || tipo === 'texto') {
       setMaterialMethod('arquivos');
-      // Load existing files
       const existingFiles = await fetchArquivos(editData.id);
       const fileItemsList: FileItem[] = existingFiles.map(f => ({
         id: f.id,
@@ -171,7 +184,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         progress: 100,
       }));
       
-      // If old single-file format, convert
       if ((tipo === 'pdf' || tipo === 'imagem') && editData.material_conteudo && fileItemsList.length === 0) {
         const fileName = editData.material_conteudo.split('/').pop() || 'arquivo';
         fileItemsList.push({
@@ -193,7 +205,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   };
 
   const handleCodigoChange = (value: string) => {
-    // Only allow numbers, max 6 digits
     const numericValue = value.replace(/\D/g, '').slice(0, 6);
     setCodigoObra(numericValue);
     
@@ -237,13 +248,33 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setTelefone(formatPhoneBR(value));
   };
 
-  const handleAddParcial = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.key === 'Enter' || e.key === ',') && parcialInput.trim()) {
-      e.preventDefault();
-      const newParcial = parcialInput.trim().replace(',', '');
-      if (newParcial && !separacoesParciais.includes(newParcial)) {
-        setSeparacoesParciais([...separacoesParciais, newParcial]);
-      }
+  // DYNAMIC LIST HANDLERS - Números da Venda
+  const handleAddVenda = (e?: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e && e.key !== 'Enter') return;
+    e?.preventDefault();
+    
+    const trimmed = vendaInput.trim();
+    if (trimmed.length >= 3 && !numerosVenda.includes(trimmed)) {
+      setNumerosVenda([...numerosVenda, trimmed]);
+      setVendaInput('');
+      setErrors(prev => ({ ...prev, numeros_venda: undefined }));
+    } else if (trimmed.length > 0 && trimmed.length < 3) {
+      setErrors(prev => ({ ...prev, numeros_venda: 'Mínimo 3 caracteres' }));
+    }
+  };
+
+  const handleRemoveVenda = (venda: string) => {
+    setNumerosVenda(numerosVenda.filter(v => v !== venda));
+  };
+
+  // DYNAMIC LIST HANDLERS - Separações Parciais
+  const handleAddParcial = (e?: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e && e.key !== 'Enter') return;
+    e?.preventDefault();
+    
+    const trimmed = parcialInput.trim();
+    if (trimmed && !separacoesParciais.includes(trimmed)) {
+      setSeparacoesParciais([...separacoesParciais, trimmed]);
       setParcialInput('');
     }
   };
@@ -258,8 +289,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (codigoObra.length < 5) {
       newErrors.codigo_obra = 'Código obrigatório (5-6 dígitos)';
     }
-    if (numeroVenda.length < 3) {
-      newErrors.numero_venda = 'Número da venda obrigatório (mínimo 3 caracteres)';
+    if (numerosVenda.length === 0) {
+      newErrors.numeros_venda = 'Adicione pelo menos 1 número de venda';
     }
     if (!gestoraEquipe) {
       newErrors.gestora_equipe = 'Selecione a gestora responsável';
@@ -270,7 +301,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (responsavel.length < 3) {
       newErrors.responsavel = 'Mínimo 3 caracteres';
     }
-    // Telefone is now optional - only validate if provided
     if (telefone && !isValidPhoneBR(telefone)) {
       newErrors.telefone = 'Telefone inválido';
     }
@@ -281,28 +311,22 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       newErrors.data_entrega = 'Data obrigatória';
     }
     
-    // Scheduled time validation
     if (deliveryType === 'scheduled' && !scheduledTime) {
       newErrors.data_entrega = 'Horário obrigatório para entregas com hora marcada';
     }
     
-    // Nivel complexidade is required
     if (!nivelComplexidade) {
       newErrors.nivel_complexidade = 'Selecione o nível de complexidade';
     }
     
-    // Tipo entrega is required
     if (!tipoEntrega) {
       newErrors.tipo_entrega = 'Selecione o tipo de entrega';
     }
     
-    // Transportadora name required if tipo is transportadora
     if (tipoEntrega === 'transportadora' && !transportadoraNome.trim()) {
       newErrors.transportadora_nome = 'Nome da transportadora obrigatório';
     }
 
-    // Material is now optional - no validation needed
-    // Only validate if a method is selected and needs content
     if (materialMethod === 'digitar' || materialMethod === 'colar') {
       if (items.length === 0) {
         newErrors.material = 'Adicione pelo menos 1 item';
@@ -354,7 +378,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       success = await updateSeparacao({
         id: editData.id,
         codigo_obra: codigoObra,
-        numero_venda: numeroVenda || undefined,
+        numero_venda: numerosVenda,
         separacoes_parciais: separacoesParciais,
         solicitante: solicitante || undefined,
         gestora_equipe: gestoraEquipe,
@@ -376,12 +400,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       });
       separacaoId = editData.id;
     } else {
-      // For create, we need to get the ID back
       const { data: newSeparacao, error } = await supabase
         .from('separacoes')
         .insert({
           codigo_obra: codigoObra,
-          numero_venda: numeroVenda,
+          numero_venda: numerosVenda,
           separacoes_parciais: separacoesParciais,
           solicitante: solicitante || null,
           gestora_equipe: gestoraEquipe,
@@ -415,7 +438,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
       separacaoId = newSeparacao.id;
 
-      // Insert items if table
       if (materialTipo === 'tabela' && formItems && formItems.length > 0) {
         const itemsToInsert = formItems.map((item, index) => ({
           separacao_id: separacaoId,
@@ -432,7 +454,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
           .insert(itemsToInsert);
 
         if (itemsError) {
-          // Rollback
           await supabase.from('separacoes').delete().eq('id', separacaoId);
           toast({
             title: 'Erro ao salvar itens',
@@ -457,24 +478,20 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
     if (!success || !separacaoId) return;
 
-    // Handle files if material method is arquivos
     if (materialMethod === 'arquivos') {
       setIsUploadingFiles(true);
 
-      // Delete files marked for deletion
       const filesToDelete = fileItems.filter(f => f.markedForDeletion && f.status === 'existing');
       for (const file of filesToDelete) {
         await deleteArquivo(file.id);
       }
 
-      // Upload new files
       const newFiles = fileItems.filter(f => f.status === 'pending' && f.file && !f.markedForDeletion);
       const uploadedFiles: { nome_arquivo: string; tipo_arquivo: 'pdf' | 'imagem'; url_arquivo: string; tamanho_bytes: number; ordem: number }[] = [];
 
       for (let i = 0; i < newFiles.length; i++) {
         const file = newFiles[i];
         try {
-          // Update progress
           setFileItems(prev => prev.map(f => 
             f.id === file.id ? { ...f, status: 'uploading', progress: 10 } : f
           ));
@@ -503,7 +520,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         }
       }
 
-      // Save file references to database
       if (uploadedFiles.length > 0) {
         await saveArquivos(separacaoId, uploadedFiles);
       }
@@ -522,7 +538,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoObra('');
     setCodigoStatus('empty');
     setCodigoChanged(false);
-    setNumeroVenda('');
+    setNumerosVenda([]);
+    setVendaInput('');
     setSeparacoesParciais([]);
     setParcialInput('');
     setSolicitante('');
@@ -548,7 +565,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const handleClose = () => {
     const hasChanges = isEditMode 
       ? (cliente !== editData?.cliente || responsavel !== editData?.responsavel_recebimento || codigoChanged)
-      : (codigoObra || cliente || responsavel || telefone || endereco || items.length > 0 || fileItems.length > 0);
+      : (codigoObra || cliente || responsavel || telefone || endereco || items.length > 0 || fileItems.length > 0 || numerosVenda.length > 0);
       
     if (hasChanges) {
       if (window.confirm('Descartar alterações?')) {
@@ -566,7 +583,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   };
 
   const isFormValid = () => {
-    // Material is now optional
     const hasMaterial = materialMethod === 'sem_material' || !materialMethod ||
       ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
       (materialMethod === 'arquivos' && fileItems.filter(f => !f.markedForDeletion).length > 0);
@@ -577,7 +593,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     
     return (
       hasValidCodigo &&
-      numeroVenda.length >= 3 &&
+      numerosVenda.length >= 1 &&
       gestoraEquipe &&
       cliente.length >= 3 &&
       responsavel.length >= 3 &&
@@ -658,7 +674,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                         value={codigoObra}
                         onChange={(e) => handleCodigoChange(e.target.value)}
                         onBlur={handleCodigoBlur}
-                        placeholder="Digite o código da obra (Ex: 26001, 26122)"
+                        placeholder="Digite o código da obra (Ex: 26001)"
                         inputMode="numeric"
                         className="h-14 pl-12 text-lg font-semibold border-0 focus-visible:ring-0"
                       />
@@ -666,7 +682,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                         <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-primary" />
                       )}
                     </div>
-                    {/* Status messages */}
                     {codigoStatus === 'invalid' && codigoObra.length > 0 && (
                       <p className="text-xs text-destructive mt-1 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" />
@@ -676,70 +691,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     {codigoStatus === 'duplicate' && (
                       <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" />
-                        Já existe separação com este código. Pode ser uma nova separação para a mesma obra?
-                      </p>
-                    )}
-                    {isEditMode && codigoChanged && codigoStatus === 'valid' && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        • Código será alterado de {editData?.codigo_obra} para {codigoObra}
+                        Já existe separação com este código.
                       </p>
                     )}
                     {errors.codigo_obra && (
                       <p className="text-xs text-destructive mt-1">{errors.codigo_obra}</p>
-                    )}
-                  </div>
-
-                  {/* Número da Venda - REQUIRED */}
-                  <div>
-                    <Label className="field-label">Número da Venda *</Label>
-                    <div className="relative mt-1.5">
-                      <FileTextIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={numeroVenda}
-                        onChange={e => setNumeroVenda(e.target.value)}
-                        placeholder="Ex: 0005201, 0003667/0005182"
-                        className={cn("h-14 pl-11", errors.numero_venda && 'border-destructive')}
-                      />
-                    </div>
-                    {errors.numero_venda && (
-                      <p className="text-xs text-destructive mt-1">{errors.numero_venda}</p>
-                    )}
-                  </div>
-
-                  {/* Separação Parcial - Tags */}
-                  <div className="md:col-span-2">
-                    <Label className="field-label">Separação Parcial</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-                      Adicione códigos de separação parcial. Pressione Enter para adicionar cada código.
-                    </p>
-                    <div className="relative">
-                      <Input
-                        value={parcialInput}
-                        onChange={e => setParcialInput(e.target.value)}
-                        onKeyDown={handleAddParcial}
-                        placeholder="Digite código e pressione Enter (Ex: SP-001)"
-                        className="h-12"
-                      />
-                    </div>
-                    {separacoesParciais.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {separacoesParciais.map((parcial, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="secondary"
-                            className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-1.5 text-sm font-medium rounded-full"
-                          >
-                            {parcial}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveParcial(parcial)}
-                              className="ml-2 text-blue-600 hover:text-blue-800"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
                     )}
                   </div>
 
@@ -758,6 +714,128 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     {errors.data_entrega && (
                       <p className="text-xs text-destructive mt-1">{errors.data_entrega}</p>
                     )}
+                  </div>
+
+                  {/* === NÚMEROS DA VENDA + SEPARAÇÃO PARCIAL (SIDE BY SIDE) === */}
+                  <div className="md:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Números da Venda - REQUIRED - DYNAMIC LIST */}
+                      <div>
+                        <Label className="field-label">Números da Venda *</Label>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
+                          Adicione um ou mais números de venda
+                        </p>
+                        
+                        {/* List of added vendas */}
+                        {numerosVenda.length > 0 && (
+                          <div className="space-y-2 mb-3">
+                            {numerosVenda.map((venda, idx) => (
+                              <div
+                                key={idx}
+                                className="h-[52px] flex items-center gap-3 px-4 rounded-lg bg-blue-50 border border-blue-500"
+                              >
+                                <FileTextIcon className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                                <span className="flex-1 text-[15px] font-semibold text-blue-800">
+                                  {venda}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveVenda(venda)}
+                                  className="p-1.5 rounded-full hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Input to add new venda */}
+                        <div className="relative">
+                          <FileTextIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-500" />
+                          <Input
+                            ref={vendaInputRef}
+                            value={vendaInput}
+                            onChange={e => setVendaInput(e.target.value)}
+                            onKeyDown={handleAddVenda}
+                            placeholder="Digite número da venda e Enter"
+                            className={cn(
+                              "h-[52px] pl-11 pr-4 rounded-lg border-2",
+                              errors.numeros_venda ? 'border-destructive' : 'border-input'
+                            )}
+                          />
+                        </div>
+                        
+                        {/* Add button */}
+                        <button
+                          type="button"
+                          onClick={() => handleAddVenda()}
+                          className="mt-2 w-full h-10 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Adicionar Número da Venda
+                        </button>
+                        
+                        {errors.numeros_venda && (
+                          <p className="text-xs text-destructive mt-1">{errors.numeros_venda}</p>
+                        )}
+                      </div>
+
+                      {/* Separação Parcial - OPTIONAL - DYNAMIC LIST */}
+                      <div>
+                        <Label className="field-label">Separação Parcial</Label>
+                        <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
+                          Códigos de separação parcial (opcional)
+                        </p>
+                        
+                        {/* List of added parciais */}
+                        {separacoesParciais.length > 0 && (
+                          <div className="space-y-2 mb-3">
+                            {separacoesParciais.map((parcial, idx) => (
+                              <div
+                                key={idx}
+                                className="h-[52px] flex items-center gap-3 px-4 rounded-lg bg-green-50 border border-green-500"
+                              >
+                                <Tag className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                <span className="flex-1 text-[15px] font-semibold text-green-800">
+                                  {parcial}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveParcial(parcial)}
+                                  className="p-1.5 rounded-full hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Input to add new parcial */}
+                        <div className="relative">
+                          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                          <Input
+                            ref={parcialInputRef}
+                            value={parcialInput}
+                            onChange={e => setParcialInput(e.target.value)}
+                            onKeyDown={handleAddParcial}
+                            placeholder="Digite código parcial e Enter"
+                            className="h-[52px] pl-11 pr-4 rounded-lg border-2 border-input"
+                          />
+                        </div>
+                        
+                        {/* Add button */}
+                        <button
+                          type="button"
+                          onClick={() => handleAddParcial()}
+                          className="mt-2 w-full h-10 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-green-300 text-green-600 hover:bg-green-50 transition-colors text-sm font-medium"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Adicionar Parcial
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Solicitante (renamed from Vendedor) */}
@@ -856,7 +934,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     </RadioGroup>
                   </div>
 
-                  {/* Horário Agendado - aparece apenas se scheduled */}
+                  {/* Horário Agendado */}
                   {deliveryType === 'scheduled' && (
                     <div className="md:col-span-2 animate-in slide-in-from-top-2 duration-200">
                       <Label className="field-label">Horário Combinado *</Label>
@@ -870,9 +948,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                           required
                         />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Horário em que o cliente espera receber a entrega
-                      </p>
                     </div>
                   )}
                 </div>
@@ -880,8 +955,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
               {/* Section: Nível de Complexidade */}
               <section>
-                <h3 className="text-base font-semibold mb-2">Nível de Complexidade *</h3>
-                <p className="text-xs text-muted-foreground mb-4">Com base no volume e dificuldade logística</p>
+                <h3 className="text-base font-semibold mb-2">Nível de Complexidade da Entrega *</h3>
+                <p className="text-xs text-muted-foreground mb-4">Classifique baseado no volume e dificuldade</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Fácil */}
@@ -889,20 +964,22 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     type="button"
                     onClick={() => setNivelComplexidade('facil')}
                     className={cn(
-                      "relative h-[100px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                      "relative h-[110px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
                       nivelComplexidade === 'facil'
-                        ? 'border-green-500 bg-green-50 border-[3px]'
+                        ? 'border-green-500 bg-green-50 border-[4px]'
                         : 'border-border hover:border-green-400 hover:bg-green-50/50'
                     )}
                   >
                     {nivelComplexidade === 'facil' && (
-                      <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-green-600" />
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
                     )}
-                    <CheckCircle className={cn("w-8 h-8", nivelComplexidade === 'facil' ? 'text-green-600' : 'text-green-400')} />
-                    <span className={cn("text-base font-bold", nivelComplexidade === 'facil' ? 'text-green-700' : 'text-green-600')}>
-                      Fácil
+                    <CheckCircle className={cn("w-10 h-10", nivelComplexidade === 'facil' ? 'text-green-600' : 'text-green-400')} />
+                    <span className={cn("text-lg font-bold", nivelComplexidade === 'facil' ? 'text-green-700' : 'text-green-600')}>
+                      FÁCIL
                     </span>
-                    <span className="text-xs text-muted-foreground">Poucos itens, rápido</span>
+                    <span className="text-xs text-muted-foreground">Poucos itens</span>
                   </button>
 
                   {/* Médio */}
@@ -910,20 +987,22 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     type="button"
                     onClick={() => setNivelComplexidade('medio')}
                     className={cn(
-                      "relative h-[100px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                      "relative h-[110px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
                       nivelComplexidade === 'medio'
-                        ? 'border-yellow-500 bg-yellow-50 border-[3px]'
+                        ? 'border-yellow-500 bg-yellow-50 border-[4px]'
                         : 'border-border hover:border-yellow-400 hover:bg-yellow-50/50'
                     )}
                   >
                     {nivelComplexidade === 'medio' && (
-                      <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-yellow-600" />
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
                     )}
-                    <Zap className={cn("w-8 h-8", nivelComplexidade === 'medio' ? 'text-yellow-600' : 'text-yellow-400')} />
-                    <span className={cn("text-base font-bold", nivelComplexidade === 'medio' ? 'text-yellow-700' : 'text-yellow-600')}>
-                      Médio
+                    <Zap className={cn("w-10 h-10", nivelComplexidade === 'medio' ? 'text-yellow-600' : 'text-yellow-400')} />
+                    <span className={cn("text-lg font-bold", nivelComplexidade === 'medio' ? 'text-yellow-700' : 'text-yellow-600')}>
+                      MÉDIO
                     </span>
-                    <span className="text-xs text-muted-foreground">Volume padrão</span>
+                    <span className="text-xs text-muted-foreground">Volume normal</span>
                   </button>
 
                   {/* Difícil */}
@@ -931,20 +1010,22 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     type="button"
                     onClick={() => setNivelComplexidade('dificil')}
                     className={cn(
-                      "relative h-[100px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                      "relative h-[110px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
                       nivelComplexidade === 'dificil'
-                        ? 'border-red-500 bg-red-50 border-[3px]'
+                        ? 'border-red-500 bg-red-50 border-[4px]'
                         : 'border-border hover:border-red-400 hover:bg-red-50/50'
                     )}
                   >
                     {nivelComplexidade === 'dificil' && (
-                      <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-red-600" />
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
                     )}
-                    <Flame className={cn("w-8 h-8", nivelComplexidade === 'dificil' ? 'text-red-600' : 'text-red-400')} />
-                    <span className={cn("text-base font-bold", nivelComplexidade === 'dificil' ? 'text-red-700' : 'text-red-600')}>
-                      Difícil
+                    <Flame className={cn("w-10 h-10", nivelComplexidade === 'dificil' ? 'text-red-600' : 'text-red-400')} />
+                    <span className={cn("text-lg font-bold", nivelComplexidade === 'dificil' ? 'text-red-700' : 'text-red-600')}>
+                      DIFÍCIL
                     </span>
-                    <span className="text-xs text-muted-foreground">Grande volume, complexo</span>
+                    <span className="text-xs text-muted-foreground">Grande volume/complexo</span>
                   </button>
                 </div>
                 {errors.nivel_complexidade && (
@@ -1111,7 +1192,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     )}
                   </div>
 
-                  {/* Telefone - Now Optional */}
+                  {/* Telefone */}
                   <div>
                     <Label className="field-label">Telefone de Contato (Opcional)</Label>
                     <div className="relative mt-1.5">
@@ -1171,9 +1252,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     placeholder={`Exemplos de observações:
 • Obra com acesso difícil - ligar 30 min antes
 • Portaria fecha às 17h
-• Elevador de serviço quebrado - usar escada
-• Cliente pediu priorizar sala de estar
-• Aguardar engenheiro no local`}
+• Elevador de serviço quebrado - usar escada`}
                     className="min-h-[100px] max-h-[200px] resize-y text-[15px] leading-relaxed"
                   />
                   <div className={`absolute bottom-2 right-2 text-xs ${observacoesInternas.length >= 2000 ? 'text-destructive' : 'text-muted-foreground'}`}>
@@ -1182,7 +1261,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 </div>
               </section>
 
-              {/* Section 4: Material para Separação - Now Optional */}
+              {/* Section 4: Material para Separação - Optional */}
               <section>
                 <h3 className="text-base font-semibold mb-2">Material para Separação</h3>
                 <p className="text-xs text-muted-foreground mb-4">Opcional - pode criar sem anexar material</p>
@@ -1220,8 +1299,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                       <span className={cn(
                         "text-sm font-medium",
                         materialMethod === option.id
-                          ? option.id === 'sem_material' ? 'text-gray-600' : 'text-primary'
-                          : ''
+                          ? option.id === 'sem_material' ? 'text-gray-700' : 'text-primary'
+                          : 'text-foreground'
                       )}>
                         {option.label}
                       </span>
@@ -1234,64 +1313,65 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                   <p className="text-xs text-destructive mb-4">{errors.material}</p>
                 )}
 
-                {/* Material Input Area */}
+                {/* Material Content based on method */}
                 {materialMethod === 'digitar' && (
-                  <ItemsTableInput items={items} onItemsChange={setItems} />
-                )}
-
-                {materialMethod === 'arquivos' && (
-                  <MultiFileUploader
-                    files={fileItems}
-                    onFilesChange={setFileItems}
-                  />
+                  <div className="animate-in slide-in-from-top-2 duration-200">
+                    <ItemsTableInput items={items} onItemsChange={setItems} />
+                  </div>
                 )}
 
                 {materialMethod === 'colar' && (
-                  <>
-                    {items.length === 0 ? (
-                      <PasteListInput onItemsParsed={handlePastedItems} />
-                    ) : (
-                      <ItemsTableInput items={items} onItemsChange={setItems} />
+                  <div className="animate-in slide-in-from-top-2 duration-200">
+                    <PasteListInput onItemsParsed={handlePastedItems} />
+                    {items.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium mb-2">Itens importados ({items.length}):</h4>
+                        <ItemsTableInput items={items} onItemsChange={setItems} />
+                      </div>
                     )}
-                  </>
+                  </div>
+                )}
+
+                {materialMethod === 'arquivos' && (
+                  <div className="animate-in slide-in-from-top-2 duration-200">
+                    <MultiFileUploader
+                      files={fileItems}
+                      onFilesChange={setFileItems}
+                      maxFiles={20}
+                      maxSizeMB={15}
+                    />
+                  </div>
                 )}
 
                 {materialMethod === 'sem_material' && (
-                  <div className="p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 text-center">
-                    <MinusCircle className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600">Nenhum material será anexado a esta separação</p>
-                    <p className="text-xs text-gray-400 mt-1">Você pode adicionar depois editando a separação</p>
+                  <div className="animate-in slide-in-from-top-2 duration-200 bg-gray-50 rounded-lg p-6 text-center">
+                    <MinusCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">Nenhum material será anexado</p>
+                    <p className="text-sm text-gray-500 mt-1">Você poderá adicionar material posteriormente editando a separação</p>
                   </div>
                 )}
               </section>
             </div>
 
-            {/* Footer Actions */}
-            <div className="sticky bottom-0 p-6 pt-4 border-t bg-background flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                className="h-12 px-6"
-              >
+            {/* Footer */}
+            <div className="sticky bottom-0 bg-background border-t p-6 flex justify-end gap-3">
+              <Button variant="outline" onClick={handleClose} disabled={isSubmitting || isUploadingFiles}>
                 Cancelar
               </Button>
-              <Button
-                type="button"
-                onClick={handleSubmit}
+              <Button 
+                onClick={handleSubmit} 
                 disabled={!isFormValid() || isSubmitting || isUploadingFiles}
-                className="h-14 px-8 bg-success hover:bg-success-dark text-success-foreground"
+                className="min-w-[160px]"
               >
                 {isSubmitting || isUploadingFiles ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    {isUploadingFiles ? 'Enviando arquivos...' : (isEditMode ? 'Salvando...' : 'Criando...')}
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {isUploadingFiles ? 'Enviando arquivos...' : 'Salvando...'}
                   </>
+                ) : isEditMode ? (
+                  'Salvar Alterações'
                 ) : (
-                  <>
-                    <Check className="w-5 h-5 mr-2" />
-                    {isEditMode ? 'Salvar Alterações' : 'Criar Separação'}
-                  </>
+                  'Criar Separação'
                 )}
               </Button>
             </div>
