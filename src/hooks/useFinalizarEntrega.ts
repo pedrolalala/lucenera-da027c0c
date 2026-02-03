@@ -54,13 +54,15 @@ export function useFinalizarEntrega() {
           codigo_obra: separacao.codigo_obra,
           endereco: separacao.endereco,
           recebido_por: recebidoPor,
-          telefone: separacao.telefone,
-          material_tipo: separacao.material_tipo,
-          material_conteudo: separacao.material_conteudo,
+          telefone: separacao.telefone || '',
+          material_tipo: separacao.material_tipo || 'texto',
+          material_conteudo: separacao.material_conteudo || '',
           fotos_urls: fotosUrls,
           observacoes: observacoes.trim() || null,
-          observacoes_internas: (separacao as any).observacoes_internas || null,
+          observacoes_internas: separacao.observacoes_internas || null,
           gestora_equipe: separacao.gestora_equipe || null,
+          numero_pedido: separacao.numero_venda || null,
+          vendedor: separacao.solicitante || null,
         });
 
       if (insertError) {

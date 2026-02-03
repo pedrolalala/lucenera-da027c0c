@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star } from 'lucide-react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star, Truck, Package, Building, Mail, Zap, Flame, CheckCircle, MinusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { Separacao } from '@/hooks/useSeparacoes';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface SeparacaoFormModalProps {
   isOpen: boolean;
@@ -26,10 +27,14 @@ interface SeparacaoFormModalProps {
   editData?: Separacao | null;
 }
 
-type MaterialMethod = 'digitar' | 'arquivos' | 'colar' | null;
+type MaterialMethod = 'digitar' | 'arquivos' | 'colar' | 'sem_material' | null;
+
+type NivelComplexidade = 'facil' | 'medio' | 'dificil';
+type TipoEntrega = 'lucenera_entrega' | 'transportadora' | 'cliente_retira' | 'correios';
 
 interface FormErrors {
   codigo_obra?: string;
+  numero_venda?: string;
   cliente?: string;
   responsavel?: string;
   telefone?: string;
@@ -37,6 +42,9 @@ interface FormErrors {
   data_entrega?: string;
   material?: string;
   gestora_equipe?: string;
+  nivel_complexidade?: string;
+  tipo_entrega?: string;
+  transportadora_nome?: string;
 }
 
 type CodigoStatus = 'empty' | 'valid' | 'invalid' | 'duplicate' | 'checking';
@@ -56,8 +64,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [codigoObra, setCodigoObra] = useState('');
   const [codigoStatus, setCodigoStatus] = useState<CodigoStatus>('empty');
   const [codigoChanged, setCodigoChanged] = useState(false);
-  const [numeroPedido, setNumeroPedido] = useState('');
-  const [vendedor, setVendedor] = useState('');
+  const [numeroVenda, setNumeroVenda] = useState('');
+  const [separacoesParciais, setSeparacoesParciais] = useState<string[]>([]);
+  const [parcialInput, setParcialInput] = useState('');
+  const [solicitante, setSolicitante] = useState('');
   const [gestoraEquipe, setGestoraEquipe] = useState('');
   const [cliente, setCliente] = useState('');
   const [responsavel, setResponsavel] = useState('');
@@ -67,6 +77,12 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('flexible');
   const [scheduledTime, setScheduledTime] = useState('');
   const [observacoesInternas, setObservacoesInternas] = useState('');
+  
+  // New fields
+  const [nivelComplexidade, setNivelComplexidade] = useState<NivelComplexidade>('medio');
+  const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>('lucenera_entrega');
+  const [transportadoraNome, setTransportadoraNome] = useState('');
+  const [codigoRastreamento, setCodigoRastreamento] = useState('');
   
   const GESTORAS = ['Thais Gomes', 'Thairine Silva', 'Marina Pousa'];
   
@@ -103,21 +119,30 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoObra(editData.codigo_obra);
     setCodigoStatus('valid');
     setCodigoChanged(false);
-    setNumeroPedido((editData as any).numero_pedido || '');
-    setVendedor((editData as any).vendedor || '');
+    setNumeroVenda((editData as any).numero_venda || (editData as any).numero_pedido || '');
+    setSeparacoesParciais((editData as any).separacoes_parciais || []);
+    setSolicitante((editData as any).solicitante || (editData as any).vendedor || '');
     setGestoraEquipe(editData.gestora_equipe || '');
     setCliente(editData.cliente);
     setResponsavel(editData.responsavel_recebimento);
-    setTelefone(formatPhoneBR(editData.telefone));
+    setTelefone(editData.telefone ? formatPhoneBR(editData.telefone) : '');
     setEndereco(editData.endereco);
     setDataEntrega(editData.data_entrega);
     setDeliveryType((editData as any).delivery_type || 'flexible');
     setScheduledTime((editData as any).scheduled_time?.slice(0, 5) || '');
     setObservacoesInternas((editData as any).observacoes_internas || '');
     
+    // New fields
+    setNivelComplexidade((editData as any).nivel_complexidade || 'medio');
+    setTipoEntrega((editData as any).tipo_entrega || 'lucenera_entrega');
+    setTransportadoraNome((editData as any).transportadora_nome || '');
+    setCodigoRastreamento((editData as any).codigo_rastreamento || '');
+    
     // Set material method based on tipo
-    const tipo = editData.material_tipo as MaterialTipo;
-    if (tipo === 'tabela') {
+    const tipo = editData.material_tipo as MaterialTipo | null;
+    if (!tipo) {
+      setMaterialMethod('sem_material');
+    } else if (tipo === 'tabela') {
       setMaterialMethod('digitar');
       // Load items
       const loadedItems = await fetchItems(editData.id);
@@ -212,11 +237,29 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setTelefone(formatPhoneBR(value));
   };
 
+  const handleAddParcial = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === 'Enter' || e.key === ',') && parcialInput.trim()) {
+      e.preventDefault();
+      const newParcial = parcialInput.trim().replace(',', '');
+      if (newParcial && !separacoesParciais.includes(newParcial)) {
+        setSeparacoesParciais([...separacoesParciais, newParcial]);
+      }
+      setParcialInput('');
+    }
+  };
+
+  const handleRemoveParcial = (parcial: string) => {
+    setSeparacoesParciais(separacoesParciais.filter(p => p !== parcial));
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
     if (codigoObra.length < 5) {
       newErrors.codigo_obra = 'Código obrigatório (5-6 dígitos)';
+    }
+    if (numeroVenda.length < 3) {
+      newErrors.numero_venda = 'Número da venda obrigatório (mínimo 3 caracteres)';
     }
     if (!gestoraEquipe) {
       newErrors.gestora_equipe = 'Selecione a gestora responsável';
@@ -227,7 +270,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (responsavel.length < 3) {
       newErrors.responsavel = 'Mínimo 3 caracteres';
     }
-    if (!isValidPhoneBR(telefone)) {
+    // Telefone is now optional - only validate if provided
+    if (telefone && !isValidPhoneBR(telefone)) {
       newErrors.telefone = 'Telefone inválido';
     }
     if (endereco.length < 10) {
@@ -241,12 +285,28 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (deliveryType === 'scheduled' && !scheduledTime) {
       newErrors.data_entrega = 'Horário obrigatório para entregas com hora marcada';
     }
+    
+    // Nivel complexidade is required
+    if (!nivelComplexidade) {
+      newErrors.nivel_complexidade = 'Selecione o nível de complexidade';
+    }
+    
+    // Tipo entrega is required
+    if (!tipoEntrega) {
+      newErrors.tipo_entrega = 'Selecione o tipo de entrega';
+    }
+    
+    // Transportadora name required if tipo is transportadora
+    if (tipoEntrega === 'transportadora' && !transportadoraNome.trim()) {
+      newErrors.transportadora_nome = 'Nome da transportadora obrigatório';
+    }
 
-    // Material validation
-    if (!materialMethod) {
-      newErrors.material = 'Selecione um método de material';
-    } else if ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length === 0) {
-      newErrors.material = 'Adicione pelo menos 1 item';
+    // Material is now optional - no validation needed
+    // Only validate if a method is selected and needs content
+    if (materialMethod === 'digitar' || materialMethod === 'colar') {
+      if (items.length === 0) {
+        newErrors.material = 'Adicione pelo menos 1 item';
+      }
     } else if (materialMethod === 'arquivos') {
       const visibleFiles = fileItems.filter(f => !f.markedForDeletion);
       if (visibleFiles.length === 0) {
@@ -261,7 +321,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    let materialTipo: MaterialTipo = 'tabela';
+    let materialTipo: MaterialTipo | null = null;
     let materialConteudo: string | null = null;
 
     if (materialMethod === 'digitar' || materialMethod === 'colar') {
@@ -269,6 +329,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       materialConteudo = null;
     } else if (materialMethod === 'arquivos') {
       materialTipo = 'arquivos' as MaterialTipo;
+      materialConteudo = null;
+    } else if (materialMethod === 'sem_material' || !materialMethod) {
+      materialTipo = null;
       materialConteudo = null;
     }
 
@@ -291,19 +354,24 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       success = await updateSeparacao({
         id: editData.id,
         codigo_obra: codigoObra,
-        numero_pedido: numeroPedido || undefined,
-        vendedor: vendedor || undefined,
+        numero_venda: numeroVenda || undefined,
+        separacoes_parciais: separacoesParciais,
+        solicitante: solicitante || undefined,
         gestora_equipe: gestoraEquipe,
         cliente,
         data_entrega: dataEntrega,
         responsavel_recebimento: responsavel,
-        telefone: telefone.replace(/\D/g, ''),
+        telefone: telefone ? telefone.replace(/\D/g, '') : null,
         endereco,
         material_tipo: materialTipo,
         material_conteudo: materialConteudo,
         delivery_type: deliveryType,
         scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
         observacoes_internas: observacoesInternas.trim() || null,
+        nivel_complexidade: nivelComplexidade,
+        tipo_entrega: tipoEntrega,
+        transportadora_nome: tipoEntrega === 'transportadora' ? transportadoraNome : null,
+        codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
         items: formItems,
       });
       separacaoId = editData.id;
@@ -313,20 +381,25 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         .from('separacoes')
         .insert({
           codigo_obra: codigoObra,
-          numero_pedido: numeroPedido || null,
-          vendedor: vendedor || null,
+          numero_venda: numeroVenda,
+          separacoes_parciais: separacoesParciais,
+          solicitante: solicitante || null,
           gestora_equipe: gestoraEquipe,
           cliente,
           data_entrega: dataEntrega,
           responsavel_recebimento: responsavel,
-          telefone: telefone.replace(/\D/g, ''),
+          telefone: telefone ? telefone.replace(/\D/g, '') : null,
           endereco,
           material_tipo: materialTipo,
           material_conteudo: materialConteudo || '',
           delivery_type: deliveryType,
           scheduled_time: deliveryType === 'scheduled' ? scheduledTime : null,
           observacoes_internas: observacoesInternas.trim() || null,
-          status: 'separando',
+          status: 'material_solicitado',
+          nivel_complexidade: nivelComplexidade,
+          tipo_entrega: tipoEntrega,
+          transportadora_nome: tipoEntrega === 'transportadora' ? transportadoraNome : null,
+          codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
         })
         .select('id')
         .single();
@@ -449,8 +522,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setCodigoObra('');
     setCodigoStatus('empty');
     setCodigoChanged(false);
-    setNumeroPedido('');
-    setVendedor('');
+    setNumeroVenda('');
+    setSeparacoesParciais([]);
+    setParcialInput('');
+    setSolicitante('');
     setGestoraEquipe('');
     setCliente('');
     setResponsavel('');
@@ -460,6 +535,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setDeliveryType('flexible');
     setScheduledTime('');
     setObservacoesInternas('');
+    setNivelComplexidade('medio');
+    setTipoEntrega('lucenera_entrega');
+    setTransportadoraNome('');
+    setCodigoRastreamento('');
     setMaterialMethod(null);
     setItems([]);
     setFileItems([]);
@@ -487,23 +566,28 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   };
 
   const isFormValid = () => {
-    const hasMaterial = 
+    // Material is now optional
+    const hasMaterial = materialMethod === 'sem_material' || !materialMethod ||
       ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
       (materialMethod === 'arquivos' && fileItems.filter(f => !f.markedForDeletion).length > 0);
     
     const hasValidSchedule = deliveryType === 'flexible' || (deliveryType === 'scheduled' && scheduledTime);
     const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
+    const hasValidTransportadora = tipoEntrega !== 'transportadora' || transportadoraNome.trim();
     
     return (
       hasValidCodigo &&
+      numeroVenda.length >= 3 &&
       gestoraEquipe &&
       cliente.length >= 3 &&
       responsavel.length >= 3 &&
-      isValidPhoneBR(telefone) &&
+      (!telefone || isValidPhoneBR(telefone)) &&
       endereco.length >= 10 &&
       dataEntrega &&
       hasValidSchedule &&
-      materialMethod &&
+      nivelComplexidade &&
+      tipoEntrega &&
+      hasValidTransportadora &&
       hasMaterial
     );
   };
@@ -512,6 +596,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     { id: 'digitar' as const, icon: Table2, label: 'Digitar Itens', sublabel: 'Item por item' },
     { id: 'arquivos' as const, icon: Paperclip, label: 'Anexar Arquivos', sublabel: 'PDFs/Imagens' },
     { id: 'colar' as const, icon: Clipboard, label: 'Colar Lista', sublabel: 'De Excel/planilha' },
+    { id: 'sem_material' as const, icon: MinusCircle, label: 'Sem Material', sublabel: 'Não anexar agora' },
   ];
 
   const getCodigoBorderClass = () => {
@@ -557,7 +642,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
             <div className="p-6 space-y-8">
               {/* Section 1: Dados da Obra */}
               <section>
-                <h3 className="text-base font-semibold mb-5">Dados da Obra</h3>
+                <h3 className="text-base font-semibold mb-5">Dados do Pedido</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Código da Obra */}
@@ -604,6 +689,60 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     )}
                   </div>
 
+                  {/* Número da Venda - REQUIRED */}
+                  <div>
+                    <Label className="field-label">Número da Venda *</Label>
+                    <div className="relative mt-1.5">
+                      <FileTextIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        value={numeroVenda}
+                        onChange={e => setNumeroVenda(e.target.value)}
+                        placeholder="Ex: 0005201, 0003667/0005182"
+                        className={cn("h-14 pl-11", errors.numero_venda && 'border-destructive')}
+                      />
+                    </div>
+                    {errors.numero_venda && (
+                      <p className="text-xs text-destructive mt-1">{errors.numero_venda}</p>
+                    )}
+                  </div>
+
+                  {/* Separação Parcial - Tags */}
+                  <div className="md:col-span-2">
+                    <Label className="field-label">Separação Parcial</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                      Adicione códigos de separação parcial. Pressione Enter para adicionar cada código.
+                    </p>
+                    <div className="relative">
+                      <Input
+                        value={parcialInput}
+                        onChange={e => setParcialInput(e.target.value)}
+                        onKeyDown={handleAddParcial}
+                        placeholder="Digite código e pressione Enter (Ex: SP-001)"
+                        className="h-12"
+                      />
+                    </div>
+                    {separacoesParciais.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {separacoesParciais.map((parcial, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="secondary"
+                            className="bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-1.5 text-sm font-medium rounded-full"
+                          >
+                            {parcial}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveParcial(parcial)}
+                              className="ml-2 text-blue-600 hover:text-blue-800"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   {/* Data de Entrega */}
                   <div>
                     <Label className="field-label">Data de Entrega Prevista *</Label>
@@ -621,9 +760,53 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     )}
                   </div>
 
-                  {/* Tipo de Entrega */}
+                  {/* Solicitante (renamed from Vendedor) */}
+                  <div>
+                    <Label className="field-label">Solicitante (Opcional)</Label>
+                    <div className="relative mt-1.5">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        value={solicitante}
+                        onChange={e => setSolicitante(e.target.value)}
+                        placeholder="Quem solicitou a separação"
+                        className="h-12 pl-11"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Gestora da Equipe */}
+                  <div>
+                    <Label className="field-label">Gestora da Equipe *</Label>
+                    <div className="relative mt-1.5">
+                      <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
+                      <select
+                        value={gestoraEquipe}
+                        onChange={e => setGestoraEquipe(e.target.value)}
+                        className={cn(
+                          "w-full h-14 pl-11 pr-4 text-base rounded-[10px] border-2 bg-background cursor-pointer appearance-none",
+                          errors.gestora_equipe ? 'border-destructive' : 'border-input',
+                          !gestoraEquipe && 'text-muted-foreground'
+                        )}
+                      >
+                        <option value="">Selecione a gestora...</option>
+                        {GESTORAS.map(g => (
+                          <option key={g} value={g}>{g}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                    {errors.gestora_equipe && (
+                      <p className="text-xs text-destructive mt-1">{errors.gestora_equipe}</p>
+                    )}
+                  </div>
+
+                  {/* Tipo de Entrega (Flexível / Hora Marcada) */}
                   <div className="md:col-span-2">
-                    <Label className="field-label">Tipo de Entrega *</Label>
+                    <Label className="field-label">Horário de Entrega *</Label>
                     <RadioGroup 
                       value={deliveryType} 
                       onValueChange={(v) => setDeliveryType(v as DeliveryType)}
@@ -692,65 +875,201 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                       </p>
                     </div>
                   )}
+                </div>
+              </section>
 
-                  {/* Número do Pedido */}
-                  <div>
-                    <Label className="field-label">Nº Pedido (Opcional)</Label>
-                    <div className="relative mt-1.5">
-                      <FileTextIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={numeroPedido}
-                        onChange={e => setNumeroPedido(e.target.value)}
-                        placeholder="Ex: 0003667/0005182"
-                        className="h-12 pl-11"
-                      />
-                    </div>
-                  </div>
+              {/* Section: Nível de Complexidade */}
+              <section>
+                <h3 className="text-base font-semibold mb-2">Nível de Complexidade *</h3>
+                <p className="text-xs text-muted-foreground mb-4">Com base no volume e dificuldade logística</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Fácil */}
+                  <button
+                    type="button"
+                    onClick={() => setNivelComplexidade('facil')}
+                    className={cn(
+                      "relative h-[100px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                      nivelComplexidade === 'facil'
+                        ? 'border-green-500 bg-green-50 border-[3px]'
+                        : 'border-border hover:border-green-400 hover:bg-green-50/50'
+                    )}
+                  >
+                    {nivelComplexidade === 'facil' && (
+                      <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-green-600" />
+                    )}
+                    <CheckCircle className={cn("w-8 h-8", nivelComplexidade === 'facil' ? 'text-green-600' : 'text-green-400')} />
+                    <span className={cn("text-base font-bold", nivelComplexidade === 'facil' ? 'text-green-700' : 'text-green-600')}>
+                      Fácil
+                    </span>
+                    <span className="text-xs text-muted-foreground">Poucos itens, rápido</span>
+                  </button>
 
-                  {/* Vendedor */}
-                  <div>
-                    <Label className="field-label">Vendedor (Opcional)</Label>
-                    <div className="relative mt-1.5">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={vendedor}
-                        onChange={e => setVendedor(e.target.value)}
-                        placeholder="Ex: MURILLO, FILIPPO"
-                        className="h-12 pl-11"
-                      />
-                    </div>
-                  </div>
+                  {/* Médio */}
+                  <button
+                    type="button"
+                    onClick={() => setNivelComplexidade('medio')}
+                    className={cn(
+                      "relative h-[100px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                      nivelComplexidade === 'medio'
+                        ? 'border-yellow-500 bg-yellow-50 border-[3px]'
+                        : 'border-border hover:border-yellow-400 hover:bg-yellow-50/50'
+                    )}
+                  >
+                    {nivelComplexidade === 'medio' && (
+                      <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-yellow-600" />
+                    )}
+                    <Zap className={cn("w-8 h-8", nivelComplexidade === 'medio' ? 'text-yellow-600' : 'text-yellow-400')} />
+                    <span className={cn("text-base font-bold", nivelComplexidade === 'medio' ? 'text-yellow-700' : 'text-yellow-600')}>
+                      Médio
+                    </span>
+                    <span className="text-xs text-muted-foreground">Volume padrão</span>
+                  </button>
 
-                  {/* Gestora da Equipe */}
-                  <div>
-                    <Label className="field-label">Gestora da Equipe *</Label>
-                    <div className="relative mt-1.5">
-                      <Star className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
-                      <select
-                        value={gestoraEquipe}
-                        onChange={e => setGestoraEquipe(e.target.value)}
-                        className={cn(
-                          "w-full h-14 pl-11 pr-4 text-base rounded-[10px] border-2 bg-background cursor-pointer appearance-none",
-                          errors.gestora_equipe ? 'border-destructive' : 'border-input',
-                          !gestoraEquipe && 'text-muted-foreground'
-                        )}
-                      >
-                        <option value="">Selecione a gestora...</option>
-                        {GESTORAS.map(g => (
-                          <option key={g} value={g}>{g}</option>
-                        ))}
-                      </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
+                  {/* Difícil */}
+                  <button
+                    type="button"
+                    onClick={() => setNivelComplexidade('dificil')}
+                    className={cn(
+                      "relative h-[100px] flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                      nivelComplexidade === 'dificil'
+                        ? 'border-red-500 bg-red-50 border-[3px]'
+                        : 'border-border hover:border-red-400 hover:bg-red-50/50'
+                    )}
+                  >
+                    {nivelComplexidade === 'dificil' && (
+                      <CheckCircle className="absolute top-2 right-2 w-5 h-5 text-red-600" />
+                    )}
+                    <Flame className={cn("w-8 h-8", nivelComplexidade === 'dificil' ? 'text-red-600' : 'text-red-400')} />
+                    <span className={cn("text-base font-bold", nivelComplexidade === 'dificil' ? 'text-red-700' : 'text-red-600')}>
+                      Difícil
+                    </span>
+                    <span className="text-xs text-muted-foreground">Grande volume, complexo</span>
+                  </button>
+                </div>
+                {errors.nivel_complexidade && (
+                  <p className="text-xs text-destructive mt-2">{errors.nivel_complexidade}</p>
+                )}
+              </section>
+
+              {/* Section: Forma de Entrega */}
+              <section>
+                <h3 className="text-base font-semibold mb-2">Forma de Entrega *</h3>
+                <p className="text-xs text-muted-foreground mb-4">Como o material será entregue</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Lucenera Entrega */}
+                  <button
+                    type="button"
+                    onClick={() => setTipoEntrega('lucenera_entrega')}
+                    className={cn(
+                      "relative p-4 flex items-start gap-3 rounded-lg border-2 transition-all text-left",
+                      tipoEntrega === 'lucenera_entrega'
+                        ? 'border-blue-500 bg-blue-50 border-[3px]'
+                        : 'border-border hover:border-blue-400 hover:bg-blue-50/50'
+                    )}
+                  >
+                    <Truck className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoEntrega === 'lucenera_entrega' ? 'text-blue-600' : 'text-blue-400')} />
+                    <div>
+                      <span className={cn("text-sm font-semibold", tipoEntrega === 'lucenera_entrega' ? 'text-blue-700' : 'text-foreground')}>
+                        Lucenera Entrega
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Equipe Lucenera realiza a entrega</p>
                     </div>
-                    {errors.gestora_equipe && (
-                      <p className="text-xs text-destructive mt-1">{errors.gestora_equipe}</p>
+                  </button>
+
+                  {/* Transportadora */}
+                  <button
+                    type="button"
+                    onClick={() => setTipoEntrega('transportadora')}
+                    className={cn(
+                      "relative p-4 flex items-start gap-3 rounded-lg border-2 transition-all text-left",
+                      tipoEntrega === 'transportadora'
+                        ? 'border-orange-500 bg-orange-50 border-[3px]'
+                        : 'border-border hover:border-orange-400 hover:bg-orange-50/50'
+                    )}
+                  >
+                    <Package className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoEntrega === 'transportadora' ? 'text-orange-600' : 'text-orange-400')} />
+                    <div>
+                      <span className={cn("text-sm font-semibold", tipoEntrega === 'transportadora' ? 'text-orange-700' : 'text-foreground')}>
+                        Transportadora
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Enviado via transportadora externa</p>
+                    </div>
+                  </button>
+
+                  {/* Cliente Retira */}
+                  <button
+                    type="button"
+                    onClick={() => setTipoEntrega('cliente_retira')}
+                    className={cn(
+                      "relative p-4 flex items-start gap-3 rounded-lg border-2 transition-all text-left",
+                      tipoEntrega === 'cliente_retira'
+                        ? 'border-green-500 bg-green-50 border-[3px]'
+                        : 'border-border hover:border-green-400 hover:bg-green-50/50'
+                    )}
+                  >
+                    <Building className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoEntrega === 'cliente_retira' ? 'text-green-600' : 'text-green-400')} />
+                    <div>
+                      <span className={cn("text-sm font-semibold", tipoEntrega === 'cliente_retira' ? 'text-green-700' : 'text-foreground')}>
+                        Cliente Retira
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Cliente busca no estoque</p>
+                    </div>
+                  </button>
+
+                  {/* Correios/Sedex */}
+                  <button
+                    type="button"
+                    onClick={() => setTipoEntrega('correios')}
+                    className={cn(
+                      "relative p-4 flex items-start gap-3 rounded-lg border-2 transition-all text-left",
+                      tipoEntrega === 'correios'
+                        ? 'border-yellow-500 bg-yellow-50 border-[3px]'
+                        : 'border-border hover:border-yellow-400 hover:bg-yellow-50/50'
+                    )}
+                  >
+                    <Mail className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoEntrega === 'correios' ? 'text-yellow-600' : 'text-yellow-400')} />
+                    <div>
+                      <span className={cn("text-sm font-semibold", tipoEntrega === 'correios' ? 'text-yellow-700' : 'text-foreground')}>
+                        Correios/Sedex
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Envio via Correios</p>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Conditional inputs */}
+                {tipoEntrega === 'transportadora' && (
+                  <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+                    <Label className="field-label">Nome da Transportadora *</Label>
+                    <Input
+                      value={transportadoraNome}
+                      onChange={e => setTransportadoraNome(e.target.value)}
+                      placeholder="Ex: Jadlog, Total Express, Braspress"
+                      className={cn("h-12 mt-1.5", errors.transportadora_nome && 'border-destructive')}
+                    />
+                    {errors.transportadora_nome && (
+                      <p className="text-xs text-destructive mt-1">{errors.transportadora_nome}</p>
                     )}
                   </div>
-                </div>
+                )}
+
+                {tipoEntrega === 'correios' && (
+                  <div className="mt-4 animate-in slide-in-from-top-2 duration-200">
+                    <Label className="field-label">Código de Rastreamento (Opcional)</Label>
+                    <Input
+                      value={codigoRastreamento}
+                      onChange={e => setCodigoRastreamento(e.target.value)}
+                      placeholder="Ex: AA123456789BR"
+                      className="h-12 mt-1.5"
+                    />
+                  </div>
+                )}
+
+                {errors.tipo_entrega && (
+                  <p className="text-xs text-destructive mt-2">{errors.tipo_entrega}</p>
+                )}
               </section>
 
               {/* Section 2: Informações do Cliente */}
@@ -792,9 +1111,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     )}
                   </div>
 
-                  {/* Telefone */}
+                  {/* Telefone - Now Optional */}
                   <div>
-                    <Label className="field-label">Telefone de Contato *</Label>
+                    <Label className="field-label">Telefone de Contato (Opcional)</Label>
                     <div className="relative mt-1.5">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
@@ -863,12 +1182,13 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 </div>
               </section>
 
-              {/* Section 4: Material para Separação */}
+              {/* Section 4: Material para Separação - Now Optional */}
               <section>
-                <h3 className="text-base font-semibold mb-5">Material para Separação</h3>
+                <h3 className="text-base font-semibold mb-2">Material para Separação</h3>
+                <p className="text-xs text-muted-foreground mb-4">Opcional - pode criar sem anexar material</p>
                 
                 {/* Material Method Selection */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                   {materialOptions.map(option => (
                     <button
                       key={option.id}
@@ -882,16 +1202,27 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                           }
                         }
                       }}
-                      className={`
-                        h-24 flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all
-                        ${materialMethod === option.id
-                          ? 'border-primary bg-primary-light border-[3px]'
+                      className={cn(
+                        "h-24 flex flex-col items-center justify-center gap-2 rounded-lg border-2 transition-all",
+                        materialMethod === option.id
+                          ? option.id === 'sem_material'
+                            ? 'border-gray-400 bg-gray-50 border-[3px]'
+                            : 'border-primary bg-primary-light border-[3px]'
                           : 'border-border hover:border-primary hover:bg-muted/50'
-                        }
-                      `}
+                      )}
                     >
-                      <option.icon className={`w-8 h-8 ${materialMethod === option.id ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className={`text-sm font-medium ${materialMethod === option.id ? 'text-primary' : ''}`}>
+                      <option.icon className={cn(
+                        "w-7 h-7",
+                        materialMethod === option.id
+                          ? option.id === 'sem_material' ? 'text-gray-500' : 'text-primary'
+                          : 'text-muted-foreground'
+                      )} />
+                      <span className={cn(
+                        "text-sm font-medium",
+                        materialMethod === option.id
+                          ? option.id === 'sem_material' ? 'text-gray-600' : 'text-primary'
+                          : ''
+                      )}>
                         {option.label}
                       </span>
                       <span className="text-xs text-muted-foreground">{option.sublabel}</span>
@@ -923,6 +1254,14 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                       <ItemsTableInput items={items} onItemsChange={setItems} />
                     )}
                   </>
+                )}
+
+                {materialMethod === 'sem_material' && (
+                  <div className="p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 text-center">
+                    <MinusCircle className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">Nenhum material será anexado a esta separação</p>
+                    <p className="text-xs text-gray-400 mt-1">Você pode adicionar depois editando a separação</p>
+                  </div>
                 )}
               </section>
             </div>

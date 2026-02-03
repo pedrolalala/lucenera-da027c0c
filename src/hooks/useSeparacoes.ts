@@ -14,18 +14,18 @@ export interface Separacao {
   telefone: string;
   endereco: string;
   status: StatusSeparacao;
-  material_tipo: 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos';
+  material_tipo: 'texto' | 'imagem' | 'pdf' | 'tabela' | 'arquivos' | null;
   material_conteudo: string;
   delivery_type: DeliveryType;
   scheduled_time: string | null;
   order_in_route: number | null;
   observacoes_internas: string | null;
   gestora_equipe: string;
-  numero_pedido: string | null;
-  vendedor: string | null;
-  separacoes_parciais: string[];
-  nivel_complexidade: NivelComplexidade;
-  tipo_entrega: TipoEntrega;
+  numero_venda: string | null;
+  solicitante: string | null;
+  separacoes_parciais: string[] | null;
+  nivel_complexidade: NivelComplexidade | null;
+  tipo_entrega: TipoEntrega | null;
   transportadora_nome: string | null;
   codigo_rastreamento: string | null;
   created_at: string;
@@ -51,7 +51,7 @@ export function useSeparacoes() {
 
       if (fetchError) throw fetchError;
       
-      setSeparacoes((data as Separacao[]) || []);
+      setSeparacoes((data || []) as Separacao[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar separações';
       setError(message);
@@ -117,7 +117,7 @@ export function useSeparacoes() {
 
       if (fetchError) throw fetchError;
       
-      return data as Separacao | null;
+      return (data as Separacao) || null;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao buscar obra';
       toast({

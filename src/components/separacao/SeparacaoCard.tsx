@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, CalendarClock, AlertTriangle, ChevronDown, ChevronUp, Star, Shield, Package, Loader2 } from 'lucide-react';
+import { Phone, MapPin, User, Check, RotateCcw, Pencil, Clock, AlertTriangle, Star, Shield, Loader2, FileText, Truck, Package, Building, Mail, Flame, Zap, CheckCircle } from 'lucide-react';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +77,53 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
       default:
         return '';
     }
+  };
+
+  const getNivelBadge = () => {
+    const nivel = separacao.nivel_complexidade;
+    if (!nivel) return null;
+    
+    const configs = {
+      facil: { label: 'FÁCIL', icon: CheckCircle, bgClass: 'bg-green-100', textClass: 'text-green-700' },
+      medio: { label: 'MÉDIO', icon: Zap, bgClass: 'bg-yellow-100', textClass: 'text-yellow-700' },
+      dificil: { label: 'DIFÍCIL', icon: Flame, bgClass: 'bg-red-100', textClass: 'text-red-700' },
+    };
+    
+    const config = configs[nivel];
+    if (!config) return null;
+    
+    const Icon = config.icon;
+    
+    return (
+      <Badge variant="outline" className={cn("border-0 font-semibold", config.bgClass, config.textClass)}>
+        <Icon className="w-3 h-3 mr-1" />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const getTipoEntregaDisplay = () => {
+    const tipo = separacao.tipo_entrega;
+    if (!tipo) return null;
+    
+    const configs = {
+      lucenera_entrega: { label: 'Lucenera Entrega', icon: Truck, color: 'text-blue-600' },
+      transportadora: { label: `Transportadora${separacao.transportadora_nome ? `: ${separacao.transportadora_nome}` : ''}`, icon: Package, color: 'text-orange-600' },
+      cliente_retira: { label: 'Cliente Retira', icon: Building, color: 'text-green-600' },
+      correios: { label: `Correios${separacao.codigo_rastreamento ? ` (${separacao.codigo_rastreamento})` : ''}`, icon: Mail, color: 'text-yellow-600' },
+    };
+    
+    const config = configs[tipo];
+    if (!config) return null;
+    
+    const Icon = config.icon;
+    
+    return (
+      <div className={cn("flex items-center gap-1.5 text-sm", config.color)}>
+        <Icon className="w-4 h-4" />
+        <span className="font-medium">{config.label}</span>
+      </div>
+    );
   };
 
   const getActionButton = () => {
@@ -177,6 +224,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
               {separacao.scheduled_time?.slice(0, 5)} FIXO
             </Badge>
           )}
+          {getNivelBadge()}
         </div>
         <span className="text-sm font-medium text-muted-foreground">
           Código: {separacao.codigo_obra}
@@ -185,6 +233,17 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
 
       {/* Client Info Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+        {/* Número da Venda */}
+        {separacao.numero_venda && (
+          <div>
+            <p className="field-label mb-1">Venda</p>
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4 text-blue-500" />
+              <p className="field-value text-blue-600 font-semibold">{separacao.numero_venda}</p>
+            </div>
+          </div>
+        )}
+
         {/* Cliente */}
         <div>
           <p className="field-label mb-1">Cliente</p>
@@ -208,6 +267,14 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
             <p className="field-value text-purple-600 font-medium">{separacao.gestora_equipe}</p>
           </div>
         </div>
+
+        {/* Tipo de Entrega */}
+        {separacao.tipo_entrega && (
+          <div>
+            <p className="field-label mb-1">Forma de Entrega</p>
+            {getTipoEntregaDisplay()}
+          </div>
+        )}
 
         {/* Telefone */}
         <div>
@@ -241,6 +308,20 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
             </div>
           </div>
         </div>
+
+        {/* Separações Parciais */}
+        {separacao.separacoes_parciais && separacao.separacoes_parciais.length > 0 && (
+          <div className="md:col-span-2">
+            <p className="field-label mb-1">Separações Parciais</p>
+            <div className="flex flex-wrap gap-1.5">
+              {separacao.separacoes_parciais.map((parcial, idx) => (
+                <Badge key={idx} variant="secondary" className="bg-gray-100 text-gray-700 text-xs">
+                  {parcial}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Observations Section */}
@@ -281,11 +362,13 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
       )}
 
       {/* Material Display */}
-      <MaterialDisplay
-        separacaoId={separacao.id}
-        materialTipo={separacao.material_tipo}
-        materialConteudo={separacao.material_conteudo}
-      />
+      {separacao.material_tipo && (
+        <MaterialDisplay
+          separacaoId={separacao.id}
+          materialTipo={separacao.material_tipo}
+          materialConteudo={separacao.material_conteudo}
+        />
+      )}
 
       {/* Actions */}
       <div className="flex justify-end gap-2 mt-5 flex-wrap">
