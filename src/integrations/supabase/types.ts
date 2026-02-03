@@ -239,6 +239,7 @@ export type Database = {
         Row: {
           cliente: string
           codigo_obra: string
+          codigo_rastreamento: string | null
           created_at: string
           data_entrega: string
           delivery_type: string
@@ -246,20 +247,25 @@ export type Database = {
           gestora_equipe: string
           id: string
           material_conteudo: string
-          material_tipo: string
-          numero_pedido: string | null
+          material_tipo: string | null
+          nivel_complexidade: string | null
+          numero_venda: string | null
           observacoes_internas: string | null
           order_in_route: number | null
           responsavel_recebimento: string
           scheduled_time: string | null
+          separacoes_parciais: string[] | null
+          solicitante: string | null
           status: string
-          telefone: string
+          telefone: string | null
+          tipo_entrega: string | null
+          transportadora_nome: string | null
           updated_at: string
-          vendedor: string | null
         }
         Insert: {
           cliente: string
           codigo_obra: string
+          codigo_rastreamento?: string | null
           created_at?: string
           data_entrega: string
           delivery_type?: string
@@ -267,20 +273,25 @@ export type Database = {
           gestora_equipe: string
           id?: string
           material_conteudo: string
-          material_tipo?: string
-          numero_pedido?: string | null
+          material_tipo?: string | null
+          nivel_complexidade?: string | null
+          numero_venda?: string | null
           observacoes_internas?: string | null
           order_in_route?: number | null
           responsavel_recebimento: string
           scheduled_time?: string | null
+          separacoes_parciais?: string[] | null
+          solicitante?: string | null
           status?: string
-          telefone: string
+          telefone?: string | null
+          tipo_entrega?: string | null
+          transportadora_nome?: string | null
           updated_at?: string
-          vendedor?: string | null
         }
         Update: {
           cliente?: string
           codigo_obra?: string
+          codigo_rastreamento?: string | null
           created_at?: string
           data_entrega?: string
           delivery_type?: string
@@ -288,16 +299,20 @@ export type Database = {
           gestora_equipe?: string
           id?: string
           material_conteudo?: string
-          material_tipo?: string
-          numero_pedido?: string | null
+          material_tipo?: string | null
+          nivel_complexidade?: string | null
+          numero_venda?: string | null
           observacoes_internas?: string | null
           order_in_route?: number | null
           responsavel_recebimento?: string
           scheduled_time?: string | null
+          separacoes_parciais?: string[] | null
+          solicitante?: string | null
           status?: string
-          telefone?: string
+          telefone?: string | null
+          tipo_entrega?: string | null
+          transportadora_nome?: string | null
           updated_at?: string
-          vendedor?: string | null
         }
         Relationships: []
       }

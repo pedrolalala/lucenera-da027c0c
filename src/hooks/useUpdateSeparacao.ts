@@ -6,19 +6,24 @@ import { MaterialTipo, SeparacaoItem, DeliveryType } from './useCreateSeparacao'
 export interface UpdateSeparacaoData {
   id: string;
   codigo_obra: string;
-  numero_pedido?: string;
-  vendedor?: string;
+  numero_venda?: string;
+  separacoes_parciais?: string[];
+  solicitante?: string;
   gestora_equipe: string;
   cliente: string;
   data_entrega: string;
   responsavel_recebimento: string;
-  telefone: string;
+  telefone: string | null;
   endereco: string;
-  material_tipo: MaterialTipo;
+  material_tipo: MaterialTipo | null;
   material_conteudo: string | null;
   delivery_type: DeliveryType;
   scheduled_time?: string | null;
   observacoes_internas?: string | null;
+  nivel_complexidade?: 'facil' | 'medio' | 'dificil';
+  tipo_entrega?: 'lucenera_entrega' | 'transportadora' | 'cliente_retira' | 'correios';
+  transportadora_nome?: string | null;
+  codigo_rastreamento?: string | null;
   items?: SeparacaoItem[];
 }
 
@@ -58,19 +63,25 @@ export function useUpdateSeparacao() {
       const { error: updateError } = await supabase
         .from('separacoes')
         .update({
-          numero_pedido: data.numero_pedido || null,
-          vendedor: data.vendedor || null,
+          codigo_obra: data.codigo_obra,
+          numero_venda: data.numero_venda || null,
+          separacoes_parciais: data.separacoes_parciais || [],
+          solicitante: data.solicitante || null,
           gestora_equipe: data.gestora_equipe,
           cliente: data.cliente,
           data_entrega: data.data_entrega,
           responsavel_recebimento: data.responsavel_recebimento,
-          telefone: data.telefone,
+          telefone: data.telefone || '',
           endereco: data.endereco,
           material_tipo: data.material_tipo,
           material_conteudo: data.material_conteudo || '',
           delivery_type: data.delivery_type,
           scheduled_time: data.delivery_type === 'scheduled' ? data.scheduled_time : null,
           observacoes_internas: data.observacoes_internas || null,
+          nivel_complexidade: data.nivel_complexidade || 'medio',
+          tipo_entrega: data.tipo_entrega || 'lucenera_entrega',
+          transportadora_nome: data.transportadora_nome || null,
+          codigo_rastreamento: data.codigo_rastreamento || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', data.id);
