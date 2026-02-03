@@ -330,6 +330,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       newErrors.transportadora_nome = 'Nome da transportadora obrigatório';
     }
 
+    // BUG 3 FIX: Material is OPTIONAL - only validate when user actively selected a method that requires content
     if (materialMethod === 'digitar' || materialMethod === 'colar') {
       if (items.length === 0) {
         newErrors.material = 'Adicione pelo menos 1 item';
@@ -340,6 +341,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         newErrors.material = 'Adicione pelo menos 1 arquivo';
       }
     }
+    // If materialMethod is null or 'sem_material', NO validation needed - material is optional
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -348,8 +350,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
+    // BUG 1 FIX: Ensure material_tipo is ONLY 'tabela', 'arquivos', or null
     // CRITICAL: Determine material_tipo based on user selection
-    // Only valid values: 'tabela', 'arquivos', or null
     let materialTipo: MaterialTipo | null = null;
     let materialConteudo: string | null = null;
 
@@ -360,9 +362,15 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       materialTipo = 'arquivos';
       materialConteudo = null;
     } else {
-      // 'sem_material' or no selection = null
+      // 'sem_material', null, or any other value = null (no material)
       materialTipo = null;
       materialConteudo = null;
+    }
+    
+    // SAFETY CHECK: Ensure materialTipo is valid before insert
+    if (materialTipo !== null && materialTipo !== 'tabela' && materialTipo !== 'arquivos') {
+      console.error('[SeparacaoForm] Invalid material_tipo detected:', materialTipo);
+      materialTipo = null; // Fallback to null
     }
 
     // DEBUG: Log values before saving

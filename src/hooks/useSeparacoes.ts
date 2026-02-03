@@ -66,6 +66,9 @@ export function useSeparacoes() {
   };
 
   const updateStatus = async (id: string, newStatus: StatusSeparacao) => {
+    // BUG 2 FIX: Simplified status update with logging
+    console.log('[useSeparacoes] Updating status:', { id, newStatus });
+    
     // Optimistic update
     const previousSeparacoes = [...separacoes];
     setSeparacoes(prev =>
@@ -73,10 +76,14 @@ export function useSeparacoes() {
     );
 
     try {
-      const { error: updateError } = await supabase
+      // Simple update - only status field
+      const { data, error: updateError } = await supabase
         .from('separacoes')
         .update({ status: newStatus })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
+
+      console.log('[useSeparacoes] Update result:', { data, error: updateError });
 
       if (updateError) throw updateError;
 
@@ -94,10 +101,14 @@ export function useSeparacoes() {
         description: `Ordem marcada como "${statusLabels[newStatus]}"`,
         className: 'bg-success text-success-foreground border-none',
       });
+      
+      // Refresh to ensure consistency
+      await fetchSeparacoes();
     } catch (err) {
       // Rollback on error
       setSeparacoes(previousSeparacoes);
       
+      console.error('[useSeparacoes] Status update error:', err);
       const message = err instanceof Error ? err.message : 'Erro ao atualizar status';
       toast({
         title: 'Erro ao atualizar',
