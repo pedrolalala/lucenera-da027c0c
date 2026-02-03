@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type MaterialTipo = 'texto' | 'tabela' | 'pdf' | 'imagem' | 'arquivos';
+// Updated to match new database constraint: 'tabela', 'arquivos', or null
+export type MaterialTipo = 'tabela' | 'arquivos';
 
 export interface SeparacaoItem {
   id: string;
