@@ -13,6 +13,8 @@ export interface SeparacaoItem {
   referencia: string;
   descricao: string;
   quantidade: number;
+  local?: string;
+  marca?: string;
 }
 
 export type DeliveryType = 'flexible' | 'scheduled';
@@ -108,6 +110,8 @@ export function useCreateSeparacao() {
           referencia: item.referencia,
           descricao: item.descricao,
           quantidade: item.quantidade,
+          local: item.local || null,
+          marca: item.marca || null,
         }));
 
         const { error: itemsError } = await supabase

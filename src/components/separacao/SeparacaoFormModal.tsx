@@ -12,6 +12,7 @@ import { useSeparacaoItens } from '@/hooks/useSeparacaoItens';
 import { useSeparacaoArquivos, SeparacaoArquivo } from '@/hooks/useSeparacaoArquivos';
 import { formatPhoneBR, isValidPhoneBR } from '@/lib/constants';
 import { ItemsTableInput, TableItem } from './ItemsTableInput';
+import { PdfExtractorUploader } from './PdfExtractorUploader';
 import { PasteListInput } from './PasteListInput';
 import { MultiFileUploader, FileItem } from './MultiFileUploader';
 import { Separacao } from '@/hooks/useSeparacoes';
@@ -26,7 +27,7 @@ interface SeparacaoFormModalProps {
   editData?: Separacao | null;
 }
 
-type MaterialMethod = 'digitar' | 'arquivos' | 'colar' | 'sem_material' | null;
+type MaterialMethod = 'digitar' | 'arquivos' | 'colar' | 'extrair_pdf' | 'sem_material' | null;
 
 type NivelComplexidade = 'facil' | 'medio' | 'dificil';
 type TipoEntrega = 'lucenera_entrega' | 'transportadora' | 'cliente_retira' | 'correios';
@@ -169,6 +170,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         referencia: item.referencia,
         descricao: item.descricao,
         quantidade: item.quantidade,
+        local: (item as any).local || '',
+        marca: (item as any).marca || '',
       }));
       setItems(tableItems);
     } else if (tipoStr === 'arquivos' || tipoStr === 'pdf' || tipoStr === 'imagem' || tipoStr === 'texto') {
@@ -331,7 +334,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     }
 
     // BUG 3 FIX: Material is OPTIONAL - only validate when user actively selected a method that requires content
-    if (materialMethod === 'digitar' || materialMethod === 'colar') {
+    if (materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') {
       if (items.length === 0) {
         newErrors.material = 'Adicione pelo menos 1 item';
       }
@@ -355,7 +358,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     let materialTipo: MaterialTipo | null = null;
     let materialConteudo: string | null = null;
 
-    if (materialMethod === 'digitar' || materialMethod === 'colar') {
+    if (materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') {
       materialTipo = 'tabela';
       materialConteudo = null;
     } else if (materialMethod === 'arquivos') {
@@ -380,7 +383,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     console.log('  separacoes_parciais:', separacoesParciais);
     console.log('  nivel_complexidade:', nivelComplexidade);
 
-    const formItems = (materialMethod === 'digitar' || materialMethod === 'colar') 
+    const formItems = (materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') 
       ? items.map((item): SeparacaoItem => ({
           id: item.id,
           ordem: item.ordem,
@@ -389,6 +392,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
           referencia: item.referencia,
           descricao: item.descricao,
           quantidade: item.quantidade,
+          // Include new fields if present
+          ...(('local' in item) ? { local: (item as any).local } : {}),
+          ...(('marca' in item) ? { marca: (item as any).marca } : {}),
         }))
       : undefined;
 
@@ -613,7 +619,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
   const isFormValid = () => {
     const hasMaterial = materialMethod === 'sem_material' || !materialMethod ||
-      ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
+      ((materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') && items.length > 0) ||
       (materialMethod === 'arquivos' && fileItems.filter(f => !f.markedForDeletion).length > 0);
     
     const hasValidSchedule = deliveryType === 'flexible' || (deliveryType === 'scheduled' && scheduledTime);
@@ -639,8 +645,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
   const materialOptions = [
     { id: 'digitar' as const, icon: Table2, label: 'Digitar Itens', sublabel: 'Item por item' },
-    { id: 'arquivos' as const, icon: Paperclip, label: 'Anexar Arquivos', sublabel: 'PDFs/Imagens' },
+    { id: 'extrair_pdf' as const, icon: FileTextIcon, label: 'Extrair de PDF', sublabel: 'Leitura automática' },
     { id: 'colar' as const, icon: Clipboard, label: 'Colar Lista', sublabel: 'De Excel/planilha' },
+    { id: 'arquivos' as const, icon: Paperclip, label: 'Anexar Arquivos', sublabel: 'PDFs/Imagens' },
     { id: 'sem_material' as const, icon: MinusCircle, label: 'Sem Material', sublabel: 'Não anexar agora' },
   ];
 
@@ -1296,7 +1303,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 <p className="text-xs text-muted-foreground mb-4">Opcional - pode criar sem anexar material</p>
                 
                 {/* Material Method Selection */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
                   {materialOptions.map(option => (
                     <button
                       key={option.id}
@@ -1346,6 +1353,23 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 {materialMethod === 'digitar' && (
                   <div className="animate-in slide-in-from-top-2 duration-200">
                     <ItemsTableInput items={items} onItemsChange={setItems} />
+                  </div>
+                )}
+
+                {materialMethod === 'extrair_pdf' && (
+                  <div className="animate-in slide-in-from-top-2 duration-200">
+                    <PdfExtractorUploader
+                      onItemsExtracted={setItems}
+                      existingItems={items}
+                    />
+                    {items.length > 0 && (
+                      <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                        <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <Check className="w-4 h-4 text-success" />
+                          {items.length} itens confirmados para salvar
+                        </h4>
+                      </div>
+                    )}
                   </div>
                 )}
 

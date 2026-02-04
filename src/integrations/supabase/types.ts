@@ -198,6 +198,8 @@ export type Database = {
           descricao: string
           id: string
           id_lote: string | null
+          local: string | null
+          marca: string | null
           ordem: number
           quantidade: number
           referencia: string
@@ -209,6 +211,8 @@ export type Database = {
           descricao: string
           id?: string
           id_lote?: string | null
+          local?: string | null
+          marca?: string | null
           ordem?: number
           quantidade: number
           referencia: string
@@ -220,6 +224,8 @@ export type Database = {
           descricao?: string
           id?: string
           id_lote?: string | null
+          local?: string | null
+          marca?: string | null
           ordem?: number
           quantidade?: number
           referencia?: string
