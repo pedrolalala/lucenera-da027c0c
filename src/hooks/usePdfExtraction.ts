@@ -30,14 +30,64 @@ export function usePdfExtraction() {
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
 
   // Parse text from PDF to extract structured data
+  // Supports multiple PDF formats from Luce Nera separação system
   const parseTextToItems = (text: string): Omit<ExtractedItem, 'id' | 'ordem'>[] => {
     const lines = text.split('\n').map(l => l.trim()).filter(l => l);
     const items: Omit<ExtractedItem, 'id' | 'ordem'>[] = [];
+    
+    // First, try to find quantities (usually in a separate column/section)
+    const quantidades: number[] = [];
+    const marcas: string[] = [];
+    
+    for (const linha of lines) {
+      // Match standalone quantities like "2,00" or "1,00"
+      const matchQtde = linha.match(/^([\d]+[,.][\d]{2})$/);
+      if (matchQtde) {
+        quantidades.push(parseFloat(matchQtde[1].replace(',', '.')));
+      }
+      
+      // Capture potential brand names (all caps, common patterns)
+      if (linha.match(/^[A-Z]{3,}$/) && !linha.match(/^(ID|QTD|QTDE|LOCAL|CODIGO|DESCRICAO|MARCA|REFERENCIA)$/i)) {
+        marcas.push(linha);
+      }
+    }
+
+    let itemIndex = 0;
 
     for (let i = 0; i < lines.length; i++) {
       const linha = lines[i];
 
-      // Pattern 1: ID (6 digits) + Local (L + number)
+      // Pattern 1: Table format - "ID LOCAL REFERENCIA DESCRICAO"
+      // Example: "1 L28 009988 EKPF22 - PERFIL PARA FITA LED COM DIFUSOR"
+      // ID is 1-3 digits, Local is L + digits, Referencia is digits, rest is description
+      const matchTableRow = linha.match(/^(\d{1,3})\s+(L\d+[A-Z]?)\s+(\d{5,})\s+(.+)$/i);
+      
+      if (matchTableRow) {
+        const ordem_pdf = matchTableRow[1];
+        const local = matchTableRow[2];
+        const referencia = matchTableRow[3];
+        const descricao = matchTableRow[4];
+        
+        // Get quantity from collected quantities or default to 1
+        const quantidade = quantidades[itemIndex] || 1;
+        // Get brand from collected brands or empty
+        const marca = marcas[itemIndex] || '';
+        
+        items.push({
+          id_lote: ordem_pdf,
+          local,
+          codigo_produto: referencia,
+          referencia,
+          descricao,
+          marca,
+          quantidade,
+        });
+        
+        itemIndex++;
+        continue;
+      }
+
+      // Pattern 2: Legacy format - ID (6 digits) + Local (L + number)
       // Example: "011248 L28" or "011248  L28A"
       const matchIdLocal = linha.match(/^(\d{6})\s+(L\d+[A-Z]?)/i);
 
@@ -46,25 +96,19 @@ export function usePdfExtraction() {
         const local = matchIdLocal[2];
 
         // Next line: Código + Quantidade + Número + Descrição
-        // Example: "STL24842/30 1,00 2 FITA LED ALL LIGHT 8W 600LM 24V IP20 - 3000K"
         if (i + 1 < lines.length) {
           const linhaDetalhes = lines[i + 1];
-
-          // Pattern: CODIGO QUANTIDADE NUMERO DESCRICAO
           const matchDetalhes = linhaDetalhes.match(/^(\S+)\s+([\d,\.]+)\s+(\d+)\s+(.+)$/);
 
           if (matchDetalhes) {
             const codigo_produto = matchDetalhes[1];
             const quantidade = parseFloat(matchDetalhes[2].replace(',', '.'));
-            // const numeroItem = parseInt(matchDetalhes[3]); // We use ordem instead
             const descricao = matchDetalhes[4];
 
-            // Following line: Marca/Fornecedor
             let marca = '';
             if (i + 2 < lines.length) {
               const linhaMarca = lines[i + 2];
-              // Check if it's not a new ID line
-              if (!linhaMarca.match(/^\d{6}\s+L\d+/i)) {
+              if (!linhaMarca.match(/^\d{6}\s+L\d+/i) && !linhaMarca.match(/^\d{1,3}\s+L\d+/i)) {
                 marca = linhaMarca.trim();
               }
             }
@@ -73,20 +117,19 @@ export function usePdfExtraction() {
               id_lote,
               local,
               codigo_produto,
-              referencia: codigo_produto, // Use codigo as referencia by default
+              referencia: codigo_produto,
               descricao,
               marca,
               quantidade: isNaN(quantidade) ? 1 : quantidade,
             });
 
-            i += 2; // Skip processed lines
+            i += 2;
             continue;
           }
         }
       }
 
-      // Pattern 2: Alternative format - "ID LOCAL CODIGO QTD DESCRICAO"
-      // Example: "011248 L28 STL24842/30 1,00 FONTE ULTRAFINA 24V"
+      // Pattern 3: Alternative inline format - "ID LOCAL CODIGO QTD DESCRICAO"
       const matchAlternative = linha.match(/^(\d{6})\s+(L\d+[A-Z]?)\s+(\S+)\s+([\d,\.]+)\s+(.+)$/i);
       if (matchAlternative) {
         items.push({
@@ -101,8 +144,7 @@ export function usePdfExtraction() {
         continue;
       }
 
-      // Pattern 3: Simple format - "CODIGO QTD DESCRICAO"
-      // Example: "STL24842/30 1,00 FONTE ULTRAFINA 24V EVO - 36W"
+      // Pattern 4: Simple format without local - "CODIGO QTD DESCRICAO"
       const matchSimple = linha.match(/^([A-Z0-9\/-]+)\s+([\d,\.]+)\s+(.+)$/i);
       if (matchSimple && matchSimple[1].length >= 5) {
         items.push({
