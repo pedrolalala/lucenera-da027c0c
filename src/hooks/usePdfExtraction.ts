@@ -1,8 +1,10 @@
 import { useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
+// @ts-ignore - worker entry for v3.x
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker for v3.x
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export interface ExtractedItem {
   id: string;
