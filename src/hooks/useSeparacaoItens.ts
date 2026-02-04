@@ -10,6 +10,8 @@ export interface SeparacaoItem {
   referencia: string;
   descricao: string;
   quantidade: number;
+  local?: string | null;
+  marca?: string | null;
   created_at: string;
 }
 

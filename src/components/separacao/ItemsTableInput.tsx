@@ -11,6 +11,8 @@ export interface TableItem {
   referencia: string;
   descricao: string;
   quantidade: number;
+  local?: string;
+  marca?: string;
 }
 
 interface ItemsTableInputProps {

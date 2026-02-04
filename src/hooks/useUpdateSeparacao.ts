@@ -112,6 +112,8 @@ export function useUpdateSeparacao() {
             referencia: item.referencia,
             descricao: item.descricao,
             quantidade: item.quantidade,
+            local: (item as any).local || null,
+            marca: (item as any).marca || null,
           }));
 
           const { error: itemsError } = await supabase
