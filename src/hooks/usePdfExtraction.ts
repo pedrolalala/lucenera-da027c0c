@@ -24,198 +24,240 @@ interface ProcessingState {
   itemsFound: number;
 }
 
+interface TextItem {
+  str: string;
+  transform: number[]; // [scaleX, skewX, skewY, scaleY, x, y]
+}
+
+// --- Coordinate-based PDF table extraction ---
+
+const Y_TOLERANCE = 5; // px tolerance for same row
+const COLUMN_TOLERANCE = 30; // px tolerance for column matching
+
+/** Group text items into rows by Y coordinate, sorted top-to-bottom, left-to-right */
+function groupIntoRows(textItems: TextItem[]): TextItem[][] {
+  const rowMap = new Map<number, TextItem[]>();
+
+  for (const item of textItems) {
+    if (!item.str.trim()) continue;
+    const y = Math.round(item.transform[5] / Y_TOLERANCE) * Y_TOLERANCE;
+    if (!rowMap.has(y)) rowMap.set(y, []);
+    rowMap.get(y)!.push(item);
+  }
+
+  return Array.from(rowMap.entries())
+    .sort((a, b) => b[0] - a[0]) // descending Y = top to bottom
+    .map(([, items]) => items.sort((a, b) => a.transform[4] - b.transform[4]));
+}
+
+/** Build a simple text string from a row */
+function rowToText(row: TextItem[]): string {
+  return row.map(i => i.str.trim()).filter(Boolean).join(' ');
+}
+
+/** Detect known column headers and return their X positions */
+function detectHeaderColumns(rows: TextItem[][]): { headerRowIdx: number; columns: Record<string, number> } | null {
+  // Look for a row containing "ID" header
+  for (let idx = 0; idx < rows.length; idx++) {
+    const text = rowToText(rows[idx]).toLowerCase();
+    if (text.includes('id') && (text.includes('descri') || text.includes('referencia') || text.includes('codigo'))) {
+      const columns: Record<string, number> = {};
+      for (const item of rows[idx]) {
+        const label = item.str.trim().toLowerCase();
+        if (label === 'id') columns['id'] = item.transform[4];
+        else if (label === 'codigo' || label === 'código') columns['local'] = item.transform[4]; // "Codigo" col holds local (L28)
+        else if (label === 'referencia' || label === 'referência') columns['referencia'] = item.transform[4];
+        else if (label.startsWith('descri')) columns['descricao'] = item.transform[4];
+      }
+      if (Object.keys(columns).length >= 2) {
+        return { headerRowIdx: idx, columns };
+      }
+    }
+  }
+  return null;
+}
+
+/** Detect the Qtde header row and its column X positions */
+function detectQtdeHeader(rows: TextItem[][]): { headerRowIdx: number; qtdeX: number; brandXPositions: { name: string; x: number }[] } | null {
+  for (let idx = 0; idx < rows.length; idx++) {
+    const text = rowToText(rows[idx]).toLowerCase();
+    if (text.includes('qtde') || text.includes('qtd')) {
+      let qtdeX = 0;
+      const brands: { name: string; x: number }[] = [];
+      for (const item of rows[idx]) {
+        const label = item.str.trim().toLowerCase();
+        if (label === 'qtde' || label === 'qtd') {
+          qtdeX = item.transform[4];
+        } else if (label !== 'qtde' && label !== 'qtd' && label.length >= 3 && !['id', 'codigo', 'código', 'referencia', 'referência'].includes(label) && !label.startsWith('descri')) {
+          brands.push({ name: item.str.trim(), x: item.transform[4] });
+        }
+      }
+      if (qtdeX > 0) {
+        return { headerRowIdx: idx, qtdeX, brandXPositions: brands };
+      }
+    }
+  }
+  return null;
+}
+
+/** Assign a text item to the closest column */
+function assignToColumn(x: number, columns: Record<string, number>): string {
+  let closest = '';
+  let minDist = Infinity;
+  for (const [name, colX] of Object.entries(columns)) {
+    const dist = Math.abs(x - colX);
+    if (dist < minDist && dist < COLUMN_TOLERANCE) {
+      minDist = dist;
+      closest = name;
+    }
+  }
+  return closest;
+}
+
+/** Main parser: extract items from PDF text items using coordinates */
+function parseItemsFromTextItems(allPageItems: TextItem[][]): Omit<ExtractedItem, 'id' | 'ordem'>[] {
+  const items: Omit<ExtractedItem, 'id' | 'ordem'>[] = [];
+
+  for (const pageItems of allPageItems) {
+    const rows = groupIntoRows(pageItems);
+
+    // 1. Detect main data header (ID | Codigo | Referencia | Descricao)
+    const mainHeader = detectHeaderColumns(rows);
+    if (!mainHeader) {
+      // Fallback: try line-based parsing
+      console.log('[PDF] No table header found on page, trying line-based fallback');
+      items.push(...parseLineBasedFallback(rows));
+      continue;
+    }
+
+    // 2. Detect Qtde header
+    const qtdeHeader = detectQtdeHeader(rows);
+
+    // 3. Extract data rows (between main header and qtde header or end)
+    const dataStartIdx = mainHeader.headerRowIdx + 1;
+    const dataEndIdx = qtdeHeader ? qtdeHeader.headerRowIdx : rows.length;
+
+    const dataRows: Record<string, string>[] = [];
+    for (let i = dataStartIdx; i < dataEndIdx; i++) {
+      const row = rows[i];
+      const rowText = rowToText(row);
+      // Skip header-like or empty rows
+      if (!rowText || rowText.toLowerCase().includes('data orçamento') || rowText.toLowerCase().includes('previsão')) continue;
+
+      const record: Record<string, string> = {};
+      for (const item of row) {
+        const col = assignToColumn(item.transform[4], mainHeader.columns);
+        if (col) {
+          record[col] = record[col] ? `${record[col]} ${item.str.trim()}` : item.str.trim();
+        }
+      }
+      // Only accept rows that have at least an ID or referencia
+      if (record['id'] || record['referencia']) {
+        dataRows.push(record);
+      }
+    }
+
+    // 4. Extract quantities and brands from qtde section
+    const quantities: number[] = [];
+    const brands: string[] = [];
+
+    if (qtdeHeader) {
+      for (let i = qtdeHeader.headerRowIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        const rowText = rowToText(row).toLowerCase();
+        // Stop at known non-data sections
+        if (rowText.includes('conferido') || rowText.includes('assumo') || rowText.includes('responsabilidade')) break;
+
+        for (const item of row) {
+          const val = item.str.trim();
+          if (!val) continue;
+
+          const distToQtde = Math.abs(item.transform[4] - qtdeHeader.qtdeX);
+          if (distToQtde < COLUMN_TOLERANCE) {
+            const num = parseFloat(val.replace(',', '.'));
+            if (!isNaN(num)) quantities.push(num);
+          } else {
+            // Check if it belongs to a brand column
+            for (const brand of qtdeHeader.brandXPositions) {
+              if (Math.abs(item.transform[4] - brand.x) < COLUMN_TOLERANCE && val.length >= 2) {
+                brands.push(val);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 5. Build extracted items
+    for (let i = 0; i < dataRows.length; i++) {
+      const r = dataRows[i];
+      items.push({
+        id_lote: r['id'] || '',
+        local: r['local'] || '',
+        codigo_produto: r['referencia'] || '',
+        referencia: r['referencia'] || '',
+        descricao: r['descricao'] || '',
+        marca: brands[i] || '',
+        quantidade: quantities[i] || 1,
+      });
+    }
+  }
+
+  return items;
+}
+
+/** Fallback line-based parser for PDFs without detectable headers */
+function parseLineBasedFallback(rows: TextItem[][]): Omit<ExtractedItem, 'id' | 'ordem'>[] {
+  const items: Omit<ExtractedItem, 'id' | 'ordem'>[] = [];
+
+  for (const row of rows) {
+    const text = rowToText(row);
+
+    // Pattern: "ID LOCAL REFERENCIA DESCRICAO"
+    const match = text.match(/^(\d{1,3})\s+(L\d+[A-Z]?)\s+(\d{5,})\s+(.+)$/i);
+    if (match) {
+      items.push({
+        id_lote: match[1],
+        local: match[2],
+        codigo_produto: match[3],
+        referencia: match[3],
+        descricao: match[4],
+        marca: '',
+        quantidade: 1,
+      });
+    }
+  }
+  return items;
+}
+
 export function usePdfExtraction() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingFiles, setProcessingFiles] = useState<ProcessingState[]>([]);
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
 
-  // Parse text from PDF to extract structured data
-  // Supports multiple PDF formats from Luce Nera separação system
-  const parseTextToItems = (text: string): Omit<ExtractedItem, 'id' | 'ordem'>[] => {
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-    const items: Omit<ExtractedItem, 'id' | 'ordem'>[] = [];
-    
-    // First, try to find quantities (usually in a separate column/section)
-    const quantidades: number[] = [];
-    const marcas: string[] = [];
-    
-    for (const linha of lines) {
-      // Match standalone quantities like "2,00" or "1,00"
-      const matchQtde = linha.match(/^([\d]+[,.][\d]{2})$/);
-      if (matchQtde) {
-        quantidades.push(parseFloat(matchQtde[1].replace(',', '.')));
-      }
-      
-      // Capture potential brand names (all caps, common patterns)
-      if (linha.match(/^[A-Z]{3,}$/) && !linha.match(/^(ID|QTD|QTDE|LOCAL|CODIGO|DESCRICAO|MARCA|REFERENCIA)$/i)) {
-        marcas.push(linha);
-      }
-    }
-
-    let itemIndex = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-      const linha = lines[i];
-
-      // Pattern 1: Table format - "ID LOCAL REFERENCIA DESCRICAO"
-      // Example: "1 L28 009988 EKPF22 - PERFIL PARA FITA LED COM DIFUSOR"
-      // ID is 1-3 digits, Local is L + digits, Referencia is digits, rest is description
-      const matchTableRow = linha.match(/^(\d{1,3})\s+(L\d+[A-Z]?)\s+(\d{5,})\s+(.+)$/i);
-      
-      if (matchTableRow) {
-        const ordem_pdf = matchTableRow[1];
-        const local = matchTableRow[2];
-        const referencia = matchTableRow[3];
-        const descricao = matchTableRow[4];
-        
-        // Get quantity from collected quantities or default to 1
-        const quantidade = quantidades[itemIndex] || 1;
-        // Get brand from collected brands or empty
-        const marca = marcas[itemIndex] || '';
-        
-        items.push({
-          id_lote: ordem_pdf,
-          local,
-          codigo_produto: referencia,
-          referencia,
-          descricao,
-          marca,
-          quantidade,
-        });
-        
-        itemIndex++;
-        continue;
-      }
-
-      // Pattern 2: Legacy format - ID (6 digits) + Local (L + number)
-      // Example: "011248 L28" or "011248  L28A"
-      const matchIdLocal = linha.match(/^(\d{6})\s+(L\d+[A-Z]?)/i);
-
-      if (matchIdLocal) {
-        const id_lote = matchIdLocal[1];
-        const local = matchIdLocal[2];
-
-        // Next line: Código + Quantidade + Número + Descrição
-        if (i + 1 < lines.length) {
-          const linhaDetalhes = lines[i + 1];
-          const matchDetalhes = linhaDetalhes.match(/^(\S+)\s+([\d,\.]+)\s+(\d+)\s+(.+)$/);
-
-          if (matchDetalhes) {
-            const codigo_produto = matchDetalhes[1];
-            const quantidade = parseFloat(matchDetalhes[2].replace(',', '.'));
-            const descricao = matchDetalhes[4];
-
-            let marca = '';
-            if (i + 2 < lines.length) {
-              const linhaMarca = lines[i + 2];
-              if (!linhaMarca.match(/^\d{6}\s+L\d+/i) && !linhaMarca.match(/^\d{1,3}\s+L\d+/i)) {
-                marca = linhaMarca.trim();
-              }
-            }
-
-            items.push({
-              id_lote,
-              local,
-              codigo_produto,
-              referencia: codigo_produto,
-              descricao,
-              marca,
-              quantidade: isNaN(quantidade) ? 1 : quantidade,
-            });
-
-            i += 2;
-            continue;
-          }
-        }
-      }
-
-      // Pattern 3: Alternative inline format - "ID LOCAL CODIGO QTD DESCRICAO"
-      const matchAlternative = linha.match(/^(\d{6})\s+(L\d+[A-Z]?)\s+(\S+)\s+([\d,\.]+)\s+(.+)$/i);
-      if (matchAlternative) {
-        items.push({
-          id_lote: matchAlternative[1],
-          local: matchAlternative[2],
-          codigo_produto: matchAlternative[3],
-          referencia: matchAlternative[3],
-          quantidade: parseFloat(matchAlternative[4].replace(',', '.')) || 1,
-          descricao: matchAlternative[5],
-          marca: '',
-        });
-        continue;
-      }
-
-      // Pattern 4: Simple format without local - "CODIGO QTD DESCRICAO"
-      const matchSimple = linha.match(/^([A-Z0-9\/-]+)\s+([\d,\.]+)\s+(.+)$/i);
-      if (matchSimple && matchSimple[1].length >= 5) {
-        items.push({
-          id_lote: '',
-          local: '',
-          codigo_produto: matchSimple[1],
-          referencia: matchSimple[1],
-          quantidade: parseFloat(matchSimple[2].replace(',', '.')) || 1,
-          descricao: matchSimple[3],
-          marca: '',
-        });
-      }
-    }
-
-    return items;
-  };
-
-  // Extract text from a single PDF file
-  const extractTextFromPdf = async (file: File): Promise<string> => {
+  // Extract raw text items with coordinates from a single PDF file
+  const extractTextItemsFromPdf = async (file: File): Promise<TextItem[][]> => {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-    let fullText = '';
+    const allPageItems: TextItem[][] = [];
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
-      
-      // Sort items by vertical position (y) then horizontal (x) for proper reading order
-      const items = textContent.items as any[];
-      const sortedItems = items
-        .filter(item => item.str && item.str.trim())
-        .sort((a, b) => {
-          const yDiff = b.transform[5] - a.transform[5]; // Descending Y (top to bottom)
-          if (Math.abs(yDiff) > 5) return yDiff;
-          return a.transform[4] - b.transform[4]; // Ascending X (left to right)
-        });
-
-      // Group items by Y position to reconstruct lines
-      let lastY: number | null = null;
-      let currentLine = '';
-
-      for (const item of sortedItems) {
-        const y = Math.round(item.transform[5]);
-        
-        if (lastY === null || Math.abs(y - lastY) < 5) {
-          currentLine += (currentLine ? ' ' : '') + item.str;
-        } else {
-          if (currentLine.trim()) {
-            fullText += currentLine.trim() + '\n';
-          }
-          currentLine = item.str;
-        }
-        lastY = y;
-      }
-
-      if (currentLine.trim()) {
-        fullText += currentLine.trim() + '\n';
-      }
-      fullText += '\n'; // Page separator
+      const items = (textContent.items as any[])
+        .filter(item => item.str !== undefined)
+        .map(item => ({ str: item.str, transform: item.transform }));
+      allPageItems.push(items);
     }
 
-    return fullText;
+    return allPageItems;
   };
 
   // Process multiple PDF files
   const processPdfFiles = useCallback(async (files: File[]): Promise<ExtractedItem[]> => {
     setIsProcessing(true);
     setExtractedItems([]);
-    
-    // Initialize processing state for each file
+
     const initialState: ProcessingState[] = files.map(f => ({
       fileName: f.name,
       progress: 0,
@@ -229,28 +271,29 @@ export function usePdfExtraction() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-
-      // Update status to processing
-      setProcessingFiles(prev => prev.map((p, idx) => 
+      setProcessingFiles(prev => prev.map((p, idx) =>
         idx === i ? { ...p, status: 'processing', progress: 10 } : p
       ));
 
       try {
-        // Extract text
-        setProcessingFiles(prev => prev.map((p, idx) => 
+        setProcessingFiles(prev => prev.map((p, idx) =>
           idx === i ? { ...p, progress: 30 } : p
         ));
-        
-        const text = await extractTextFromPdf(file);
 
-        // Parse items
-        setProcessingFiles(prev => prev.map((p, idx) => 
+        const pageItems = await extractTextItemsFromPdf(file);
+
+        // Debug: log reconstructed text for troubleshooting
+        for (let p = 0; p < pageItems.length; p++) {
+          const rows = groupIntoRows(pageItems[p]);
+          console.log(`[PDF_DEBUG] Page ${p + 1} rows:`, rows.map(r => rowToText(r)));
+        }
+
+        setProcessingFiles(prev => prev.map((p, idx) =>
           idx === i ? { ...p, progress: 70 } : p
         ));
 
-        const parsedItems = parseTextToItems(text);
+        const parsedItems = parseItemsFromTextItems(pageItems);
 
-        // Add IDs and ordem
         const itemsWithIds: ExtractedItem[] = parsedItems.map(item => ({
           ...item,
           id: crypto.randomUUID(),
@@ -259,19 +302,17 @@ export function usePdfExtraction() {
 
         allItems.push(...itemsWithIds);
 
-        // Update status to done
-        setProcessingFiles(prev => prev.map((p, idx) => 
+        setProcessingFiles(prev => prev.map((p, idx) =>
           idx === i ? { ...p, status: 'done', progress: 100, itemsFound: itemsWithIds.length } : p
         ));
-
       } catch (error) {
         console.error(`Error processing ${file.name}:`, error);
-        setProcessingFiles(prev => prev.map((p, idx) => 
-          idx === i ? { 
-            ...p, 
-            status: 'error', 
-            progress: 100, 
-            error: error instanceof Error ? error.message : 'Erro ao processar PDF' 
+        setProcessingFiles(prev => prev.map((p, idx) =>
+          idx === i ? {
+            ...p,
+            status: 'error',
+            progress: 100,
+            error: error instanceof Error ? error.message : 'Erro ao processar PDF'
           } : p
         ));
       }
