@@ -10,9 +10,10 @@ import { TableItem } from './ItemsTableInput';
 interface PdfExtractorUploaderProps {
   onItemsExtracted: (items: TableItem[]) => void;
   existingItems?: TableItem[];
+  onFilesSelected?: (files: File[]) => void;
 }
 
-export function PdfExtractorUploader({ onItemsExtracted, existingItems = [] }: PdfExtractorUploaderProps) {
+export function PdfExtractorUploader({ onItemsExtracted, existingItems = [], onFilesSelected }: PdfExtractorUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,13 +66,15 @@ export function PdfExtractorUploader({ onItemsExtracted, existingItems = [] }: P
     const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
     if (files.length > 0) {
       processPdfFiles(files);
+      onFilesSelected?.(files);
     }
-  }, [processPdfFiles]);
+  }, [processPdfFiles, onFilesSelected]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []).filter(f => f.type === 'application/pdf');
     if (files.length > 0) {
       processPdfFiles(files);
+      onFilesSelected?.(files);
     }
     if (inputRef.current) {
       inputRef.current.value = '';
