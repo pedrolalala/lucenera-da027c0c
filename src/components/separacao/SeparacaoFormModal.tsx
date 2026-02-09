@@ -794,23 +794,14 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                             value={vendaInput}
                             onChange={e => setVendaInput(e.target.value)}
                             onKeyDown={handleAddVenda}
-                            placeholder="Digite número da venda e Enter"
+                            onBlur={() => handleAddVenda()}
+                            placeholder="Digite e pressione Enter"
                             className={cn(
                               "h-[52px] pl-11 pr-4 rounded-lg border-2",
                               errors.numeros_venda ? 'border-destructive' : 'border-input'
                             )}
                           />
                         </div>
-                        
-                        {/* Add button */}
-                        <button
-                          type="button"
-                          onClick={() => handleAddVenda()}
-                          className="mt-2 w-full h-10 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-blue-300 text-blue-600 hover:bg-blue-50 transition-colors text-sm font-medium"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Adicionar Número da Venda
-                        </button>
                         
                         {errors.numeros_venda && (
                           <p className="text-xs text-destructive mt-1">{errors.numeros_venda}</p>
@@ -848,7 +839,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                           </div>
                         )}
                         
-                        {/* Input to add new parcial */}
                         <div className="relative">
                           <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
                           <Input
@@ -856,20 +846,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                             value={parcialInput}
                             onChange={e => setParcialInput(e.target.value)}
                             onKeyDown={handleAddParcial}
-                            placeholder="Digite código parcial e Enter"
+                            onBlur={() => handleAddParcial()}
+                            placeholder="Digite e pressione Enter"
                             className="h-[52px] pl-11 pr-4 rounded-lg border-2 border-input"
                           />
                         </div>
-                        
-                        {/* Add button */}
-                        <button
-                          type="button"
-                          onClick={() => handleAddParcial()}
-                          className="mt-2 w-full h-10 flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-green-300 text-green-600 hover:bg-green-50 transition-colors text-sm font-medium"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Adicionar Parcial
-                        </button>
                       </div>
                     </div>
                   </div>
