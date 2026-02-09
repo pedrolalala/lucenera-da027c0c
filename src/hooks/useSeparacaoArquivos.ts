@@ -71,13 +71,18 @@ export function useSeparacaoArquivos() {
 
     onProgress?.(90);
 
-    const { data: urlData } = supabase.storage
+    // Bucket is private — use signed URL (7 days expiry)
+    const { data: urlData, error: signError } = await supabase.storage
       .from('materiais-separacao')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 604800); // 7 days
+
+    if (signError) {
+      throw new Error(`Erro ao gerar URL do arquivo: ${signError.message}`);
+    }
 
     onProgress?.(100);
 
-    return urlData.publicUrl;
+    return urlData.signedUrl;
   };
 
   const saveArquivos = async (
