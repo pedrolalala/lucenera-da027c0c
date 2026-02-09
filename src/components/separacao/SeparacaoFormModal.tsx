@@ -334,9 +334,14 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     }
 
     // BUG 3 FIX: Material is OPTIONAL - only validate when user actively selected a method that requires content
-    if (materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') {
+    if (materialMethod === 'digitar' || materialMethod === 'colar') {
       if (items.length === 0) {
         newErrors.material = 'Adicione pelo menos 1 item';
+      }
+    } else if (materialMethod === 'extrair_pdf') {
+      const hasFiles = fileItems.filter(f => !f.markedForDeletion).length > 0;
+      if (items.length === 0 && !hasFiles) {
+        newErrors.material = 'Anexe um PDF ou adicione itens';
       }
     } else if (materialMethod === 'arquivos') {
       const visibleFiles = fileItems.filter(f => !f.markedForDeletion);
@@ -358,8 +363,13 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     let materialTipo: MaterialTipo | null = null;
     let materialConteudo: string | null = null;
 
-    if (materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') {
+    if (materialMethod === 'digitar' || materialMethod === 'colar') {
       materialTipo = 'tabela';
+      materialConteudo = null;
+    } else if (materialMethod === 'extrair_pdf') {
+      // If items were extracted, save as tabela; files are also uploaded separately
+      // If no items but files exist, save as arquivos
+      materialTipo = items.length > 0 ? 'tabela' : 'arquivos';
       materialConteudo = null;
     } else if (materialMethod === 'arquivos') {
       materialTipo = 'arquivos';
@@ -618,9 +628,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   };
 
   const isFormValid = () => {
+    const visibleFiles = fileItems.filter(f => !f.markedForDeletion).length > 0;
     const hasMaterial = materialMethod === 'sem_material' || !materialMethod ||
-      ((materialMethod === 'digitar' || materialMethod === 'colar' || materialMethod === 'extrair_pdf') && items.length > 0) ||
-      (materialMethod === 'arquivos' && fileItems.filter(f => !f.markedForDeletion).length > 0);
+      ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
+      (materialMethod === 'extrair_pdf' && (items.length > 0 || visibleFiles)) ||
+      (materialMethod === 'arquivos' && visibleFiles);
     
     const hasValidSchedule = deliveryType === 'flexible' || (deliveryType === 'scheduled' && scheduledTime);
     const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
