@@ -638,7 +638,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
     const hasValidTransportadora = tipoEntrega !== 'transportadora' || transportadoraNome.trim();
     
-    return (
+    const valid = !!(
       hasValidCodigo &&
       numerosVenda.length >= 1 &&
       gestoraEquipe &&
@@ -653,6 +653,31 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       hasValidTransportadora &&
       hasMaterial
     );
+
+    // Debug: log which fields are blocking
+    if (!valid) {
+      console.log('[isFormValid] DEBUG:', {
+        hasValidCodigo, codigoObra, codigoStatus,
+        numerosVenda: numerosVenda.length,
+        gestoraEquipe: !!gestoraEquipe,
+        cliente: cliente.length,
+        responsavel: responsavel.length,
+        telefone,
+        endereco: endereco.length,
+        dataEntrega: !!dataEntrega,
+        hasValidSchedule,
+        nivelComplexidade: !!nivelComplexidade,
+        tipoEntrega: !!tipoEntrega,
+        hasValidTransportadora: !!hasValidTransportadora,
+        hasMaterial,
+        materialMethod,
+        visibleFiles,
+        itemsCount: items.length,
+        fileItemsCount: fileItems.length,
+      });
+    }
+
+    return valid;
   };
 
   const materialOptions = [
