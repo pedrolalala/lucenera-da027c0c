@@ -638,7 +638,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
     const hasValidTransportadora = tipoEntrega !== 'transportadora' || transportadoraNome.trim();
     
-    const valid = !!(
+    return !!(
       hasValidCodigo &&
       numerosVenda.length >= 1 &&
       gestoraEquipe &&
@@ -653,31 +653,32 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       hasValidTransportadora &&
       hasMaterial
     );
+  };
 
-    // Debug: log which fields are blocking
-    if (!valid) {
-      console.log('[isFormValid] DEBUG:', {
-        hasValidCodigo, codigoObra, codigoStatus,
-        numerosVenda: numerosVenda.length,
-        gestoraEquipe: !!gestoraEquipe,
-        cliente: cliente.length,
-        responsavel: responsavel.length,
-        telefone,
-        endereco: endereco.length,
-        dataEntrega: !!dataEntrega,
-        hasValidSchedule,
-        nivelComplexidade: !!nivelComplexidade,
-        tipoEntrega: !!tipoEntrega,
-        hasValidTransportadora: !!hasValidTransportadora,
-        hasMaterial,
-        materialMethod,
-        visibleFiles,
-        itemsCount: items.length,
-        fileItemsCount: fileItems.length,
-      });
+  const getMissingFields = (): string[] => {
+    const missing: string[] = [];
+    if (codigoObra.length < 5 || codigoStatus === 'invalid') missing.push('Código da Obra');
+    if (numerosVenda.length < 1) missing.push('Nº da Venda');
+    if (!gestoraEquipe) missing.push('Gestora');
+    if (cliente.length < 3) missing.push('Cliente');
+    if (responsavel.length < 3) missing.push('Responsável');
+    if (telefone && !isValidPhoneBR(telefone)) missing.push('Telefone inválido');
+    if (endereco.length < 10) missing.push('Endereço');
+    if (!dataEntrega) missing.push('Data de Entrega');
+    if (deliveryType === 'scheduled' && !scheduledTime) missing.push('Horário');
+    if (!nivelComplexidade) missing.push('Complexidade');
+    if (!tipoEntrega) missing.push('Tipo de Entrega');
+    if (tipoEntrega === 'transportadora' && !transportadoraNome.trim()) missing.push('Transportadora');
+    
+    const visibleFiles = fileItems.filter(f => !f.markedForDeletion).length > 0;
+    if (materialMethod === 'digitar' || materialMethod === 'colar') {
+      if (items.length === 0) missing.push('Material (itens)');
+    } else if (materialMethod === 'extrair_pdf') {
+      if (items.length === 0 && !visibleFiles) missing.push('Material (PDF)');
+    } else if (materialMethod === 'arquivos') {
+      if (!visibleFiles) missing.push('Material (arquivos)');
     }
-
-    return valid;
+    return missing;
   };
 
   const materialOptions = [
@@ -1464,26 +1465,39 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-background border-t p-6 flex justify-end gap-3">
-              <Button variant="outline" onClick={handleClose} disabled={isSubmitting || isUploadingFiles}>
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleSubmit} 
-                disabled={!isFormValid() || isSubmitting || isUploadingFiles}
-                className="min-w-[160px]"
-              >
-                {isSubmitting || isUploadingFiles ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isUploadingFiles ? 'Enviando arquivos...' : 'Salvando...'}
-                  </>
-                ) : isEditMode ? (
-                  'Salvar Alterações'
-                ) : (
-                  'Criar Separação'
-                )}
-              </Button>
+            <div className="sticky bottom-0 bg-background border-t p-6 space-y-2">
+              {!isFormValid() && (
+                <div className="text-xs text-muted-foreground flex flex-wrap gap-1 items-center">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="font-medium">Faltam:</span>
+                  {getMissingFields().map((field, i) => (
+                    <span key={field} className="text-amber-600 font-medium">
+                      {field}{i < getMissingFields().length - 1 ? ',' : ''}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={handleClose} disabled={isSubmitting || isUploadingFiles}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={!isFormValid() || isSubmitting || isUploadingFiles}
+                  className="min-w-[160px]"
+                >
+                  {isSubmitting || isUploadingFiles ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {isUploadingFiles ? 'Enviando arquivos...' : 'Salvando...'}
+                    </>
+                  ) : isEditMode ? (
+                    'Salvar Alterações'
+                  ) : (
+                    'Criar Separação'
+                  )}
+                </Button>
+              </div>
             </div>
           </>
         )}
