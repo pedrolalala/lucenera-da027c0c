@@ -795,7 +795,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                             onChange={e => setVendaInput(e.target.value)}
                             onKeyDown={handleAddVenda}
                             onBlur={() => handleAddVenda()}
-                            placeholder="Digite e pressione Enter"
+                            placeholder="Digite o número da venda"
                             className={cn(
                               "h-[52px] pl-11 pr-4 rounded-lg border-2",
                               errors.numeros_venda ? 'border-destructive' : 'border-input'
@@ -847,7 +847,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                             onChange={e => setParcialInput(e.target.value)}
                             onKeyDown={handleAddParcial}
                             onBlur={() => handleAddParcial()}
-                            placeholder="Digite e pressione Enter"
+                            placeholder="Digite o código parcial"
                             className="h-[52px] pl-11 pr-4 rounded-lg border-2 border-input"
                           />
                         </div>
