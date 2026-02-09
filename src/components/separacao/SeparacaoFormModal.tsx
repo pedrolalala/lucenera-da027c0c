@@ -513,7 +513,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
     if (!success || !separacaoId) return;
 
-    if (materialMethod === 'arquivos') {
+    if (materialMethod === 'arquivos' || (materialMethod === 'extrair_pdf' && fileItems.filter(f => !f.markedForDeletion).length > 0)) {
       setIsUploadingFiles(true);
 
       const filesToDelete = fileItems.filter(f => f.markedForDeletion && f.status === 'existing');
@@ -645,7 +645,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
   const materialOptions = [
     { id: 'digitar' as const, icon: Table2, label: 'Digitar Itens', sublabel: 'Item por item' },
-    { id: 'extrair_pdf' as const, icon: FileTextIcon, label: 'Extrair de PDF', sublabel: 'Leitura automática' },
+    { id: 'extrair_pdf' as const, icon: FileTextIcon, label: 'Extrair / Anexar PDF', sublabel: 'Extrai dados + anexa' },
     { id: 'colar' as const, icon: Clipboard, label: 'Colar Lista', sublabel: 'De Excel/planilha' },
     { id: 'arquivos' as const, icon: Paperclip, label: 'Anexar Arquivos', sublabel: 'PDFs/Imagens' },
     { id: 'sem_material' as const, icon: MinusCircle, label: 'Sem Material', sublabel: 'Não anexar agora' },
@@ -989,6 +989,82 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 </div>
               </section>
 
+              {/* Section 2: Informações do Cliente - moved up for easier flow */}
+              <section>
+                <h3 className="text-base font-semibold mb-5">Informações do Cliente</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Cliente */}
+                  <div>
+                    <Label className="field-label">Cliente *</Label>
+                    <div className="relative mt-1.5">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        value={cliente}
+                        onChange={e => setCliente(e.target.value)}
+                        placeholder="Nome completo ou razão social"
+                        className={`h-14 pl-11 ${errors.cliente ? 'border-destructive' : ''}`}
+                      />
+                    </div>
+                    {errors.cliente && (
+                      <p className="text-xs text-destructive mt-1">{errors.cliente}</p>
+                    )}
+                  </div>
+
+                  {/* Responsável */}
+                  <div>
+                    <Label className="field-label">Responsável na Obra *</Label>
+                    <div className="relative mt-1.5">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        value={responsavel}
+                        onChange={e => setResponsavel(e.target.value)}
+                        placeholder="Nome de quem receberá"
+                        className={`h-14 pl-11 ${errors.responsavel ? 'border-destructive' : ''}`}
+                      />
+                    </div>
+                    {errors.responsavel && (
+                      <p className="text-xs text-destructive mt-1">{errors.responsavel}</p>
+                    )}
+                  </div>
+
+                  {/* Telefone */}
+                  <div>
+                    <Label className="field-label">Telefone de Contato (Opcional)</Label>
+                    <div className="relative mt-1.5">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <Input
+                        type="tel"
+                        value={telefone}
+                        onChange={e => handlePhoneChange(e.target.value)}
+                        placeholder="(16) 99999-9999"
+                        className={`h-14 pl-11 ${errors.telefone ? 'border-destructive' : ''}`}
+                      />
+                    </div>
+                    {errors.telefone && (
+                      <p className="text-xs text-destructive mt-1">{errors.telefone}</p>
+                    )}
+                  </div>
+
+                  {/* Endereço */}
+                  <div className="md:col-span-2">
+                    <Label className="field-label">Endereço de Entrega *</Label>
+                    <div className="relative mt-1.5">
+                      <MapPin className="absolute left-3 top-4 w-5 h-5 text-muted-foreground" />
+                      <Textarea
+                        value={endereco}
+                        onChange={e => setEndereco(e.target.value)}
+                        placeholder="Rua, número, complemento, bairro, cidade - UF"
+                        className={`min-h-[80px] pl-11 pt-3 resize-none ${errors.endereco ? 'border-destructive' : ''}`}
+                      />
+                    </div>
+                    {errors.endereco && (
+                      <p className="text-xs text-destructive mt-1">{errors.endereco}</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
               {/* Section: Nível de Complexidade */}
               <section>
                 <h3 className="text-base font-semibold mb-2">Nível de Complexidade da Entrega *</h3>
@@ -1189,81 +1265,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 )}
               </section>
 
-              {/* Section 2: Informações do Cliente */}
-              <section>
-                <h3 className="text-base font-semibold mb-5">Informações do Cliente</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Cliente */}
-                  <div>
-                    <Label className="field-label">Cliente *</Label>
-                    <div className="relative mt-1.5">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={cliente}
-                        onChange={e => setCliente(e.target.value)}
-                        placeholder="Nome completo ou razão social"
-                        className={`h-14 pl-11 ${errors.cliente ? 'border-destructive' : ''}`}
-                      />
-                    </div>
-                    {errors.cliente && (
-                      <p className="text-xs text-destructive mt-1">{errors.cliente}</p>
-                    )}
-                  </div>
 
-                  {/* Responsável */}
-                  <div>
-                    <Label className="field-label">Responsável na Obra *</Label>
-                    <div className="relative mt-1.5">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        value={responsavel}
-                        onChange={e => setResponsavel(e.target.value)}
-                        placeholder="Nome de quem receberá"
-                        className={`h-14 pl-11 ${errors.responsavel ? 'border-destructive' : ''}`}
-                      />
-                    </div>
-                    {errors.responsavel && (
-                      <p className="text-xs text-destructive mt-1">{errors.responsavel}</p>
-                    )}
-                  </div>
-
-                  {/* Telefone */}
-                  <div>
-                    <Label className="field-label">Telefone de Contato (Opcional)</Label>
-                    <div className="relative mt-1.5">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <Input
-                        type="tel"
-                        value={telefone}
-                        onChange={e => handlePhoneChange(e.target.value)}
-                        placeholder="(16) 99999-9999"
-                        className={`h-14 pl-11 ${errors.telefone ? 'border-destructive' : ''}`}
-                      />
-                    </div>
-                    {errors.telefone && (
-                      <p className="text-xs text-destructive mt-1">{errors.telefone}</p>
-                    )}
-                  </div>
-
-                  {/* Endereço */}
-                  <div className="md:col-span-2">
-                    <Label className="field-label">Endereço de Entrega *</Label>
-                    <div className="relative mt-1.5">
-                      <MapPin className="absolute left-3 top-4 w-5 h-5 text-muted-foreground" />
-                      <Textarea
-                        value={endereco}
-                        onChange={e => setEndereco(e.target.value)}
-                        placeholder="Rua, número, complemento, bairro, cidade - UF"
-                        className={`min-h-[80px] pl-11 pt-3 resize-none ${errors.endereco ? 'border-destructive' : ''}`}
-                      />
-                    </div>
-                    {errors.endereco && (
-                      <p className="text-xs text-destructive mt-1">{errors.endereco}</p>
-                    )}
-                  </div>
-                </div>
-              </section>
 
               {/* Section 3: Observações */}
               <section>
@@ -1357,17 +1359,54 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                 )}
 
                 {materialMethod === 'extrair_pdf' && (
-                  <div className="animate-in slide-in-from-top-2 duration-200">
+                  <div className="animate-in slide-in-from-top-2 duration-200 space-y-4">
                     <PdfExtractorUploader
                       onItemsExtracted={setItems}
                       existingItems={items}
+                      onFilesSelected={(files) => {
+                        // Also attach the PDFs as files
+                        const newFileItems: FileItem[] = files.map((file, idx) => ({
+                          id: crypto.randomUUID(),
+                          nome_arquivo: file.name,
+                          tipo_arquivo: 'pdf' as const,
+                          tamanho_bytes: file.size,
+                          ordem: fileItems.length + idx + 1,
+                          url_arquivo: '',
+                          status: 'pending' as const,
+                          progress: 0,
+                          file,
+                        }));
+                        setFileItems(prev => [...prev, ...newFileItems]);
+                      }}
                     />
                     {items.length > 0 && (
-                      <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+                      <div className="p-4 bg-muted/50 rounded-lg">
                         <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                           <Check className="w-4 h-4 text-success" />
-                          {items.length} itens confirmados para salvar
+                          {items.length} itens extraídos para salvar
                         </h4>
+                      </div>
+                    )}
+                    {fileItems.filter(f => !f.markedForDeletion).length > 0 && (
+                      <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                          <Paperclip className="w-4 h-4 text-blue-600" />
+                          {fileItems.filter(f => !f.markedForDeletion).length} arquivo(s) anexado(s)
+                        </h4>
+                        <div className="space-y-1">
+                          {fileItems.filter(f => !f.markedForDeletion).map(f => (
+                            <div key={f.id} className="flex items-center justify-between text-xs text-blue-700">
+                              <span>{f.nome_arquivo}</span>
+                              <button
+                                type="button"
+                                onClick={() => setFileItems(prev => prev.filter(fi => fi.id !== f.id))}
+                                className="p-1 hover:text-red-500"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
