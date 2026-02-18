@@ -80,9 +80,11 @@ export interface EntregaPendente {
   fotos_urls: string[];
   registrado_por: string;
   registrado_por_user_id: string | null;
-  data_registro: string;
-  status_pendencia: 'aguardando_resolucao' | 'em_analise' | 'resolvido' | 'cancelado';
+  data_registro: string | null;
+  status_pendencia: 'aguardando_resolucao' | 'em_analise' | 'resolvido' | 'cancelado' | null;
   resolved_at: string | null;
   resolved_by: string | null;
-  created_at: string;
+  fotos_resolucao?: string[] | null;
+  observacoes_resolucao?: string | null;
+  created_at: string | null;
 }

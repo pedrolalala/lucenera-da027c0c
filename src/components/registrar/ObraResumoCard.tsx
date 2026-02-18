@@ -194,8 +194,15 @@ export function ObraResumoCard({ separacao }: ObraResumoCardProps) {
         </div>
 
         <div className="space-y-4">
-          {/* Cliente */}
+          {/* Número da Entrega + Cliente */}
           <div>
+            {separacao.numero_entrega && (
+              <div className="inline-flex items-center gap-1.5 bg-primary/15 border border-primary/30 rounded-lg px-3 py-1 mb-2">
+                <span className="text-xs font-mono font-bold text-primary tracking-widest">
+                  {separacao.numero_entrega}
+                </span>
+              </div>
+            )}
             <p className="text-xs uppercase font-semibold text-primary-dark/70 tracking-wide mb-1">
               Cliente
             </p>
