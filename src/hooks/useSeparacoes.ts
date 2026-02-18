@@ -28,6 +28,7 @@ export interface Separacao {
   tipo_entrega: TipoEntrega | null;
   transportadora_nome: string | null;
   codigo_rastreamento: string | null;
+  numero_entrega: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -121,10 +122,13 @@ export function useSeparacoes() {
 
   const findByCodigoObra = async (codigo: string): Promise<Separacao | null> => {
     try {
+      // Support both codigo_obra (numeric) and numero_entrega (LUC-XXXX) formats
+      const isNumeroEntrega = /^LUC-/i.test(codigo);
+      
       const { data, error: fetchError } = await supabase
         .from('separacoes')
         .select('*')
-        .eq('codigo_obra', codigo)
+        .eq(isNumeroEntrega ? 'numero_entrega' : 'codigo_obra', isNumeroEntrega ? codigo.toUpperCase() : codigo)
         .maybeSingle();
 
       if (fetchError) throw fetchError;

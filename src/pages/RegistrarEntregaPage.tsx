@@ -41,8 +41,9 @@ export default function RegistrarEntregaPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Validate code format: AANNNN (5-6 digits only)
-  const isValidCodeFormat = (code: string) => /^[0-9]{5,6}$/.test(code);
+  // Validate code: numeric 5-6 digits (codigo_obra) OR LUC-NNNN format (numero_entrega)
+  const isValidCodeFormat = (code: string) =>
+    /^[0-9]{5,6}$/.test(code) || /^LUC-\d{1,6}$/i.test(code);
 
   const validateCode = useCallback(async () => {
     const trimmedCode = codigoObra.trim();
@@ -56,7 +57,7 @@ export default function RegistrarEntregaPage() {
     // Validate format
     if (!isValidCodeFormat(trimmedCode)) {
       setValidationState('error');
-      setErrorMessage('Código inválido. Use formato: 26001 (5-6 dígitos)');
+      setErrorMessage('Código inválido. Use: LUC-0001 (número da entrega) ou 26001 (código da obra)');
       setObraData(null);
       return;
     }

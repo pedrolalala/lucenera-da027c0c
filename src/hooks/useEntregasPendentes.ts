@@ -19,6 +19,7 @@ interface CreatePendenciaData {
 
 export function useEntregasPendentes() {
   const [pendentes, setPendentes] = useState<EntregaPendente[]>([]);
+  const [resolvedPendentes, setResolvedPendentes] = useState<EntregaPendente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -31,12 +32,13 @@ export function useEntregasPendentes() {
       const { data, error: fetchError } = await supabase
         .from('entregas_pendentes')
         .select('*')
-        .in('status_pendencia', ['aguardando_resolucao', 'em_analise'])
         .order('data_registro', { ascending: false });
 
       if (fetchError) throw fetchError;
       
-      setPendentes((data as EntregaPendente[]) || []);
+      const all = (data as EntregaPendente[]) || [];
+      setPendentes(all.filter(p => p.status_pendencia !== 'resolvido'));
+      setResolvedPendentes(all.filter(p => p.status_pendencia === 'resolvido'));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar pendências';
       setError(message);
@@ -136,6 +138,7 @@ export function useEntregasPendentes() {
 
   return {
     pendentes,
+    resolvedPendentes,
     isLoading,
     error,
     createPendencia,

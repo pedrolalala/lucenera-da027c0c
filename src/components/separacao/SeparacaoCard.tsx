@@ -159,7 +159,14 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
         {/* Client name + code */}
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-foreground truncate block">{separacao.cliente}</span>
-          <span className="text-xs text-muted-foreground">{separacao.codigo_obra}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {separacao.numero_entrega && (
+              <span className="text-xs font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                {separacao.numero_entrega}
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">Obra: {separacao.codigo_obra}</span>
+          </div>
         </div>
 
         {/* Gestora (small, subtle) */}

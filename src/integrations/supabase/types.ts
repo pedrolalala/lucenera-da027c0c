@@ -90,12 +90,15 @@ export type Database = {
           data_registro: string | null
           descricao_problema: string
           endereco: string | null
+          fotos_resolucao: string[] | null
           fotos_urls: string[] | null
           id: string
+          observacoes_resolucao: string | null
           registrado_por: string
           registrado_por_user_id: string | null
           resolved_at: string | null
           resolved_by: string | null
+          resolved_by_user_id: string | null
           responsavel: string | null
           separacao_id: string
           status_pendencia: string | null
@@ -109,12 +112,15 @@ export type Database = {
           data_registro?: string | null
           descricao_problema: string
           endereco?: string | null
+          fotos_resolucao?: string[] | null
           fotos_urls?: string[] | null
           id?: string
+          observacoes_resolucao?: string | null
           registrado_por: string
           registrado_por_user_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_by_user_id?: string | null
           responsavel?: string | null
           separacao_id: string
           status_pendencia?: string | null
@@ -128,12 +134,15 @@ export type Database = {
           data_registro?: string | null
           descricao_problema?: string
           endereco?: string | null
+          fotos_resolucao?: string[] | null
           fotos_urls?: string[] | null
           id?: string
+          observacoes_resolucao?: string | null
           registrado_por?: string
           registrado_por_user_id?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          resolved_by_user_id?: string | null
           responsavel?: string | null
           separacao_id?: string
           status_pendencia?: string | null
@@ -255,6 +264,7 @@ export type Database = {
           material_conteudo: string
           material_tipo: string | null
           nivel_complexidade: string | null
+          numero_entrega: string | null
           numero_venda: string[]
           observacoes_internas: string | null
           order_in_route: number | null
@@ -281,6 +291,7 @@ export type Database = {
           material_conteudo: string
           material_tipo?: string | null
           nivel_complexidade?: string | null
+          numero_entrega?: string | null
           numero_venda?: string[]
           observacoes_internas?: string | null
           order_in_route?: number | null
@@ -307,6 +318,7 @@ export type Database = {
           material_conteudo?: string
           material_tipo?: string | null
           nivel_complexidade?: string | null
+          numero_entrega?: string | null
           numero_venda?: string[]
           observacoes_internas?: string | null
           order_in_route?: number | null
