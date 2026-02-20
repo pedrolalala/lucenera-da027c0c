@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
       { email: "mariane@lucenera.com.br", password: "Lucenera2026!" },
       { email: "pedro@lucenera.com.br", password: "Lucenera2026!" },
       { email: "matheus@lucenera.com.br", password: "Lucenera2026!" },
+      { email: "vitoria@lucenera.com.br", password: "Lucenera2026!" },
     ];
 
     const results = [];
