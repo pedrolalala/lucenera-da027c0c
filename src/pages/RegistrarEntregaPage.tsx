@@ -103,7 +103,7 @@ export default function RegistrarEntregaPage() {
     setObraData(separacao);
     setRecebidoPor(separacao.responsavel_recebimento);
     setTelefoneContato(separacao.telefone || '');
-    setQuemEntregou(user?.email?.split('@')[0] || '');
+    setQuemEntregou('Alexandre');
     
     toast({
       title: 'Obra encontrada! ✓',

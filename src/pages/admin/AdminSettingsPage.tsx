@@ -28,6 +28,7 @@ const GESTORAS = [
   { id: 1, nome: 'Thais Gomes', ativo: true },
   { id: 2, nome: 'Thairine Silva', ativo: true },
   { id: 3, nome: 'Marina Pousa', ativo: true },
+  { id: 4, nome: 'Vinicius', ativo: true },
 ];
 
 export default function AdminSettingsPage() {

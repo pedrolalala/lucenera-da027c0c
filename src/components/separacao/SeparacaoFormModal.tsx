@@ -90,7 +90,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [transportadoraNome, setTransportadoraNome] = useState('');
   const [codigoRastreamento, setCodigoRastreamento] = useState('');
   
-  const GESTORAS = ['Thais Gomes', 'Thairine Silva', 'Marina Pousa'];
+  const GESTORAS = ['Thais Gomes', 'Thairine Silva', 'Marina Pousa', 'Vinicius'];
   
   // Material state
   const [materialMethod, setMaterialMethod] = useState<MaterialMethod>(null);
@@ -310,7 +310,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (telefone && !isValidPhoneBR(telefone)) {
       newErrors.telefone = 'Telefone inválido';
     }
-    if (endereco.length < 10) {
+    if (tipoEntrega !== 'cliente_retira' && endereco.length < 10) {
       newErrors.endereco = 'Mínimo 10 caracteres';
     }
     if (!dataEntrega) {
@@ -663,7 +663,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (cliente.length < 3) missing.push('Cliente');
     if (responsavel.length < 3) missing.push('Responsável');
     if (telefone && !isValidPhoneBR(telefone)) missing.push('Telefone inválido');
-    if (endereco.length < 10) missing.push('Endereço');
+    if (tipoEntrega !== 'cliente_retira' && endereco.length < 10) missing.push('Endereço');
     if (!dataEntrega) missing.push('Data de Entrega');
     if (deliveryType === 'scheduled' && !scheduledTime) missing.push('Horário');
     if (!nivelComplexidade) missing.push('Complexidade');
@@ -1067,7 +1067,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
                   {/* Endereço */}
                   <div className="md:col-span-2">
-                    <Label className="field-label">Endereço de Entrega *</Label>
+                    <Label className="field-label">Endereço de Entrega {tipoEntrega !== 'cliente_retira' ? '*' : '(opcional)'}</Label>
                     <div className="relative mt-1.5">
                       <MapPin className="absolute left-3 top-4 w-5 h-5 text-muted-foreground" />
                       <Textarea

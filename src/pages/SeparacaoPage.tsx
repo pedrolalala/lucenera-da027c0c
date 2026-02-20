@@ -187,7 +187,7 @@ export default function SeparacaoPage() {
               key={date.toISOString()} 
               date={date} 
               count={items.length}
-              onCreateRoute={() => handleCreateRoute(date, items)}
+              onCreateRoute={() => handleCreateRoute(date, items.filter(s => s.tipo_entrega !== 'cliente_retira'))}
             >
               {items.map((separacao) => (
                 <SeparacaoCard
