@@ -18,6 +18,13 @@ export function EntregaFinalizadaRow({ entrega, onOpenDetails }: EntregaFinaliza
         Finalizado
       </span>
 
+      {/* Número Entrega */}
+      {entrega.numero_entrega && (
+        <span className="shrink-0 text-xs font-mono font-bold text-primary">
+          {entrega.numero_entrega}
+        </span>
+      )}
+
       {/* Cliente */}
       <span className="flex-1 min-w-0 text-sm font-semibold text-foreground truncate">
         {entrega.cliente}

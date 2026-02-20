@@ -67,6 +67,7 @@ export function useFinalizarEntrega() {
           gestora_equipe: separacao.gestora_equipe || null,
           numero_pedido: Array.isArray(separacao.numero_venda) ? separacao.numero_venda.join(', ') : (separacao.numero_venda || null),
           vendedor: separacao.solicitante || null,
+          numero_entrega: separacao.numero_entrega || null,
         });
 
       if (insertError) {
