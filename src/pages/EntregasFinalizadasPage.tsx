@@ -111,6 +111,7 @@ export default function EntregasFinalizadasPage() {
         entrega={selectedEntrega}
         open={!!selectedEntrega}
         onClose={() => setSelectedEntrega(null)}
+        onUpdated={refetch}
       />
     </AppLayout>
   );
