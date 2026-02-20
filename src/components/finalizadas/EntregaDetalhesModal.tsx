@@ -267,7 +267,13 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
                     <p className="text-sm text-foreground">{entrega.endereco}</p>
                   </div>
                 </div>
-                <div className="col-span-2">
+                {entrega.numero_entrega && (
+                  <div>
+                    <p className="field-label mb-1">Nº Entrega</p>
+                    <p className="text-sm font-mono font-bold text-primary">{entrega.numero_entrega}</p>
+                  </div>
+                )}
+                <div>
                   <p className="field-label mb-1">Código da Obra</p>
                   <p className="text-sm font-mono text-foreground">{entrega.codigo_obra}</p>
                 </div>

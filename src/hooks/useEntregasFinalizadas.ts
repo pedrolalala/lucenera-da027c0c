@@ -19,6 +19,7 @@ export interface EntregaFinalizada {
   gestora_equipe: string | null;
   numero_pedido: string | null;  // Stores joined vendas
   vendedor: string | null;       // Stores solicitante
+  numero_entrega: string | null;
   created_at: string;
 }
 

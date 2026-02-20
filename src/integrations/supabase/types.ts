@@ -26,6 +26,7 @@ export type Database = {
           id: string
           material_conteudo: string
           material_tipo: string
+          numero_entrega: string | null
           numero_pedido: string | null
           observacoes: string | null
           observacoes_internas: string | null
@@ -45,6 +46,7 @@ export type Database = {
           id?: string
           material_conteudo: string
           material_tipo: string
+          numero_entrega?: string | null
           numero_pedido?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
@@ -64,6 +66,7 @@ export type Database = {
           id?: string
           material_conteudo?: string
           material_tipo?: string
+          numero_entrega?: string | null
           numero_pedido?: string | null
           observacoes?: string | null
           observacoes_internas?: string | null
