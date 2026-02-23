@@ -154,6 +154,7 @@ export default function RegistrarEntregaPage() {
       recebidoPor: recebidoPor.trim(),
       fotos,
       observacoes: observacoes.trim(),
+      dataEntrega,
     });
 
     if (success) {

@@ -40,6 +40,7 @@ interface FormData {
   vendedor: string;
   observacoes: string;
   observacoes_internas: string;
+  data_entrega_real: string;
 }
 
 export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: EntregaDetalhesModalProps) {
@@ -52,7 +53,7 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
   const [form, setForm] = useState<FormData>({
     cliente: '', codigo_obra: '', endereco: '', recebido_por: '',
     telefone: '', gestora_equipe: '', numero_pedido: '', vendedor: '',
-    observacoes: '', observacoes_internas: '',
+    observacoes: '', observacoes_internas: '', data_entrega_real: '',
   });
 
   // Photo state: existing paths kept + paths to delete + new files to upload
@@ -80,6 +81,7 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
         vendedor: entrega.vendedor || '',
         observacoes: entrega.observacoes || '',
         observacoes_internas: entrega.observacoes_internas || '',
+        data_entrega_real: format(parseISO(entrega.data_entrega_real), 'yyyy-MM-dd'),
       });
       setExistingPhotoPaths([...(entrega.fotos_urls || [])]);
       setRemovedPaths([]);
@@ -177,6 +179,7 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
           observacoes: form.observacoes || null,
           observacoes_internas: form.observacoes_internas || null,
           fotos_urls: finalPhotos,
+          data_entrega_real: new Date(form.data_entrega_real + 'T12:00:00').toISOString(),
         })
         .eq('id', entrega.id);
 
@@ -463,6 +466,10 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
               <div className="sm:col-span-2">
                 <Label htmlFor="edit-cliente">Cliente</Label>
                 <Input id="edit-cliente" value={form.cliente} onChange={(e) => handleFieldChange('cliente', e.target.value)} />
+              </div>
+              <div>
+                <Label htmlFor="edit-data-entrega">Data da Entrega</Label>
+                <Input id="edit-data-entrega" type="date" value={form.data_entrega_real} onChange={(e) => handleFieldChange('data_entrega_real', e.target.value)} className="h-11" />
               </div>
               <div>
                 <Label htmlFor="edit-codigo">Código da Obra</Label>

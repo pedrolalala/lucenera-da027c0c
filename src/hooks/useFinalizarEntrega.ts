@@ -8,6 +8,7 @@ interface FinalizarEntregaData {
   recebidoPor: string;
   fotos: File[];
   observacoes: string;
+  dataEntrega?: string; // yyyy-MM-dd
 }
 
 export function useFinalizarEntrega() {
@@ -15,7 +16,7 @@ export function useFinalizarEntrega() {
   const { toast } = useToast();
 
   const finalizarEntrega = async (data: FinalizarEntregaData): Promise<boolean> => {
-    const { separacao, recebidoPor, fotos, observacoes } = data;
+    const { separacao, recebidoPor, fotos, observacoes, dataEntrega } = data;
     
     setIsSubmitting(true);
 
@@ -54,6 +55,7 @@ export function useFinalizarEntrega() {
         .from('entregas_finalizadas')
         .insert({
           separacao_id: separacao.id,
+          ...(dataEntrega ? { data_entrega_real: new Date(dataEntrega + 'T12:00:00').toISOString() } : {}),
           cliente: separacao.cliente,
           codigo_obra: separacao.codigo_obra,
           endereco: separacao.endereco,
