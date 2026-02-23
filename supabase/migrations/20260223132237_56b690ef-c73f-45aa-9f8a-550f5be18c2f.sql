@@ -1,0 +1,1 @@
+ALTER TABLE public.entregas_finalizadas ADD COLUMN data_solicitacao timestamp with time zone;

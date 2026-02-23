@@ -2,8 +2,10 @@ import { useState } from 'react';
 import {
   Phone, MapPin, User, Check, RotateCcw, Pencil, Clock,
   AlertTriangle, Star, Loader2, FileText, Truck, Package,
-  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp
+  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus
 } from 'lucide-react';
+import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Separacao } from '@/hooks/useSeparacoes';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
@@ -166,6 +168,12 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
               </span>
             )}
             <span className="text-xs text-muted-foreground">Obra: {separacao.codigo_obra}</span>
+            {separacao.created_at && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                <CalendarPlus className="w-2.5 h-2.5" />
+                {format(parseISO(separacao.created_at), 'dd/MM/yy')}
+              </span>
+            )}
           </div>
         </div>
 
