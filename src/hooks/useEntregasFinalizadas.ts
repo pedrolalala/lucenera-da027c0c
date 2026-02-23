@@ -20,6 +20,7 @@ export interface EntregaFinalizada {
   numero_pedido: string | null;  // Stores joined vendas
   vendedor: string | null;       // Stores solicitante
   numero_entrega: string | null;
+  data_solicitacao: string | null;
   created_at: string;
 }
 

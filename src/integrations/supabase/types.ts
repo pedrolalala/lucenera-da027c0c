@@ -20,6 +20,7 @@ export type Database = {
           codigo_obra: string
           created_at: string
           data_entrega_real: string
+          data_solicitacao: string | null
           endereco: string
           fotos_urls: string[]
           gestora_equipe: string | null
@@ -40,6 +41,7 @@ export type Database = {
           codigo_obra: string
           created_at?: string
           data_entrega_real?: string
+          data_solicitacao?: string | null
           endereco: string
           fotos_urls?: string[]
           gestora_equipe?: string | null
@@ -60,6 +62,7 @@ export type Database = {
           codigo_obra?: string
           created_at?: string
           data_entrega_real?: string
+          data_solicitacao?: string | null
           endereco?: string
           fotos_urls?: string[]
           gestora_equipe?: string | null

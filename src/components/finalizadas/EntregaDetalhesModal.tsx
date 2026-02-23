@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface EntregaDetalhesModalProps {
@@ -253,6 +253,23 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
                     Finalizado
                   </span>
                 </div>
+                {entrega.data_solicitacao && (
+                  <div>
+                    <p className="field-label mb-1">Data da Solicitação</p>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <p className="text-sm text-foreground">
+                        {format(parseISO(entrega.data_solicitacao), 'dd/MM/yyyy', { locale: ptBR })}
+                      </p>
+                    </div>
+                    <p className="text-xs text-blue-600 font-medium mt-0.5">
+                      {(() => {
+                        const dias = differenceInDays(parseISO(entrega.data_entrega_real), parseISO(entrega.data_solicitacao));
+                        return dias === 0 ? 'Entregue no mesmo dia' : `${dias} dia${dias !== 1 ? 's' : ''} até a entrega`;
+                      })()}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="field-label mb-1">Quem recebeu</p>
                   <div className="flex items-center gap-1.5">

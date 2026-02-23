@@ -68,6 +68,7 @@ export function useFinalizarEntrega() {
           numero_pedido: Array.isArray(separacao.numero_venda) ? separacao.numero_venda.join(', ') : (separacao.numero_venda || null),
           vendedor: separacao.solicitante || null,
           numero_entrega: separacao.numero_entrega || null,
+          data_solicitacao: separacao.created_at || null,
         });
 
       if (insertError) {
