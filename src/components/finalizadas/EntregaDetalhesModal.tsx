@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface EntregaDetalhesModalProps {
@@ -264,7 +264,7 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
                     </div>
                     <p className="text-xs text-blue-600 font-medium mt-0.5">
                       {(() => {
-                        const dias = differenceInDays(parseISO(entrega.data_entrega_real), parseISO(entrega.data_solicitacao));
+                        const dias = differenceInCalendarDays(parseISO(entrega.data_entrega_real), parseISO(entrega.data_solicitacao));
                         return dias === 0 ? 'Entregue no mesmo dia' : `${dias} dia${dias !== 1 ? 's' : ''} até a entrega`;
                       })()}
                     </p>

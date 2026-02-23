@@ -2,7 +2,7 @@ import { Eye, User, Clock } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { format, parseISO, differenceInDays } from 'date-fns';
+import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 
 interface EntregaFinalizadaRowProps {
   entrega: EntregaFinalizada;
@@ -13,7 +13,7 @@ export function EntregaFinalizadaRow({ entrega, onOpenDetails }: EntregaFinaliza
   const formattedDate = format(parseISO(entrega.data_entrega_real), 'dd/MM/yyyy');
 
   const diasParaEntrega = entrega.data_solicitacao
-    ? differenceInDays(parseISO(entrega.data_entrega_real), parseISO(entrega.data_solicitacao))
+    ? differenceInCalendarDays(parseISO(entrega.data_entrega_real), parseISO(entrega.data_solicitacao))
     : null;
 
   return (
