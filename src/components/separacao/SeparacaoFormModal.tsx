@@ -245,6 +245,36 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     
     if (exists) {
       setCodigoStatus('duplicate');
+      
+      // Auto-fill: fetch last separacao with this codigo_obra and pre-fill fields (only in create mode)
+      if (!isEditMode) {
+        try {
+          const { data: lastSep } = await supabase
+            .from('separacoes')
+            .select('cliente, responsavel_recebimento, telefone, endereco, gestora_equipe')
+            .eq('codigo_obra', codigoObra)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (lastSep) {
+            if (!cliente) setCliente(lastSep.cliente || '');
+            if (!responsavel) setResponsavel(lastSep.responsavel_recebimento || '');
+            if (!telefone && lastSep.telefone) setTelefone(formatPhoneBR(lastSep.telefone));
+            if (!endereco) setEndereco(lastSep.endereco || '');
+            if (!gestoraEquipe && lastSep.gestora_equipe) setGestoraEquipe(lastSep.gestora_equipe);
+            
+            toast({
+              title: 'Dados preenchidos automaticamente',
+              description: `Campos preenchidos com base na última separação do projeto ${codigoObra}.`,
+              className: 'bg-primary text-primary-foreground border-none',
+            });
+          }
+        } catch (err) {
+          // Silent fail - auto-fill is a convenience, not critical
+          console.log('[SeparacaoForm] Auto-fill lookup failed:', err);
+        }
+      }
     } else {
       setCodigoStatus('valid');
     }

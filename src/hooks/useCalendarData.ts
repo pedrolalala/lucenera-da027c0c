@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { startOfMonth, endOfMonth, format, parseISO } from 'date-fns';
+import { startOfMonth, endOfMonth, format, parseISO, eachDayOfInterval, startOfDay, isBefore, isAfter, isEqual } from 'date-fns';
 import { Separacao } from './useSeparacoes';
 
 export interface DayData {
@@ -35,21 +35,41 @@ export function useCalendarData(year: number, month: number) {
       const startDate = startOfMonth(new Date(year, month));
       const endDate = endOfMonth(new Date(year, month));
 
-      const { data: entregas, error: fetchError } = await supabase
-        .from('separacoes')
-        .select('*')
-        .gte('data_entrega', format(startDate, 'yyyy-MM-dd'))
-        .lte('data_entrega', format(endDate, 'yyyy-MM-dd'))
-        .order('data_entrega', { ascending: true });
+      // Fetch entregas for the month AND any "em_separacao" entries whose delivery date is in the future
+      // (they may have updated_at before this month)
+      const monthStart = format(startDate, 'yyyy-MM-dd');
+      const monthEnd = format(endDate, 'yyyy-MM-dd');
 
-      if (fetchError) throw fetchError;
+      const [monthResult, emSeparacaoResult] = await Promise.all([
+        supabase
+          .from('separacoes')
+          .select('*')
+          .gte('data_entrega', monthStart)
+          .lte('data_entrega', monthEnd)
+          .order('data_entrega', { ascending: true }),
+        // Also fetch em_separacao entries whose delivery date is >= month start
+        // and whose updated_at (status change) is <= month end
+        supabase
+          .from('separacoes')
+          .select('*')
+          .eq('status', 'em_separacao')
+          .gte('data_entrega', monthStart)
+          .lte('updated_at', monthEnd + 'T23:59:59')
+      ]);
 
-      // Group by date
+      if (monthResult.error) throw monthResult.error;
+
+      // Merge both results, deduplicating by id
+      const allEntregas = new Map<string, Separacao>();
+      ((monthResult.data || []) as Separacao[]).forEach(e => allEntregas.set(e.id, e));
+      if (!emSeparacaoResult.error) {
+        ((emSeparacaoResult.data || []) as Separacao[]).forEach(e => allEntregas.set(e.id, e));
+      }
+
+      // Group by date, expanding "em_separacao" entries across days
       const grouped: MonthData = {};
-      
-      (entregas as Separacao[] || []).forEach((entrega) => {
-        const dateKey = entrega.data_entrega;
-        
+
+      const addToDay = (dateKey: string, entrega: Separacao) => {
         if (!grouped[dateKey]) {
           grouped[dateKey] = {
             total: 0,
@@ -59,21 +79,22 @@ export function useCalendarData(year: number, month: number) {
             garantia: 0,
             pendente: 0,
             finalizado: 0,
-            separando: 0, // Legacy
+            separando: 0,
             entregas: [],
           };
         }
+        // Avoid duplicates in the same day
+        if (grouped[dateKey].entregas.some(e => e.id === entrega.id)) return;
 
         grouped[dateKey].total++;
-        
         switch (entrega.status) {
           case 'material_solicitado':
             grouped[dateKey].materialSolicitado++;
-            grouped[dateKey].separando++; // Legacy compatibility
+            grouped[dateKey].separando++;
             break;
           case 'em_separacao':
             grouped[dateKey].emSeparacao++;
-            grouped[dateKey].separando++; // Legacy compatibility
+            grouped[dateKey].separando++;
             break;
           case 'separado':
             grouped[dateKey].separado++;
@@ -88,8 +109,28 @@ export function useCalendarData(year: number, month: number) {
             grouped[dateKey].finalizado++;
             break;
         }
-        
         grouped[dateKey].entregas.push(entrega);
+      };
+      
+      allEntregas.forEach((entrega) => {
+        if (entrega.status === 'em_separacao') {
+          // Show on every day from updated_at (status change) to data_entrega, clamped to current month
+          const statusChangedAt = startOfDay(parseISO(entrega.updated_at));
+          const deliveryDate = startOfDay(parseISO(entrega.data_entrega));
+          
+          const rangeStart = isAfter(statusChangedAt, startDate) ? statusChangedAt : startDate;
+          const rangeEnd = isBefore(deliveryDate, endDate) ? deliveryDate : endDate;
+          
+          if (!isAfter(rangeStart, rangeEnd)) {
+            const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+            days.forEach(day => {
+              addToDay(format(day, 'yyyy-MM-dd'), entrega);
+            });
+          }
+        } else {
+          // Normal: only show on delivery date
+          addToDay(entrega.data_entrega, entrega);
+        }
       });
 
       setData(grouped);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StatusSeparacao, NivelComplexidade, TipoEntrega } from '@/types/separacao';
+import { format, eachDayOfInterval, startOfDay, parseISO, isAfter, isBefore } from 'date-fns';
 
 export type DeliveryType = 'flexible' | 'scheduled';
 

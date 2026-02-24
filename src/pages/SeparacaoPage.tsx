@@ -14,7 +14,7 @@ import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
 import { Button } from '@/components/ui/button';
 import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
 import { FiltroSegmento, StatusSeparacao } from '@/types/separacao';
-import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual } from 'date-fns';
+import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual, eachDayOfInterval } from 'date-fns';
 
 export default function SeparacaoPage() {
   const navigate = useNavigate();
@@ -82,16 +82,36 @@ export default function SeparacaoPage() {
     });
   }, [separacoes, filtro, dateRange]);
 
-  // Group by date
+  // Group by date - expand "em_separacao" entries across days from updated_at to data_entrega
   const groupedByDate = useMemo(() => {
     const groups: { [key: string]: Separacao[] } = {};
+    const today = startOfDay(new Date());
+    
+    const addToGroup = (dateKey: string, s: Separacao) => {
+      if (!groups[dateKey]) groups[dateKey] = [];
+      if (!groups[dateKey].some(existing => existing.id === s.id)) {
+        groups[dateKey].push(s);
+      }
+    };
     
     filteredSeparacoes.forEach((s) => {
-      const dateKey = s.data_entrega;
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
+      if (s.status === 'em_separacao') {
+        // Show on every day from updated_at to data_entrega
+        const statusChangedAt = startOfDay(parseISO(s.updated_at));
+        const deliveryDate = startOfDay(parseISO(s.data_entrega));
+        const rangeStart = isAfter(statusChangedAt, today) ? today : statusChangedAt;
+        
+        if (!isAfter(rangeStart, deliveryDate)) {
+          const days = eachDayOfInterval({ start: rangeStart, end: deliveryDate });
+          days.forEach(day => {
+            addToGroup(format(day, 'yyyy-MM-dd'), s);
+          });
+        } else {
+          addToGroup(s.data_entrega, s);
+        }
+      } else {
+        addToGroup(s.data_entrega, s);
       }
-      groups[dateKey].push(s);
     });
 
     // Sort by date (ascending - closest first)
