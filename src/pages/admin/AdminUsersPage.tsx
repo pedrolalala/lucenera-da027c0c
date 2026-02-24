@@ -102,36 +102,34 @@ export default function AdminUsersPage() {
     },
   });
 
-  // Create user mutation
+  // Create user mutation (uses edge function to avoid session swap)
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // 1. Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            nome_completo: data.nome_completo,
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-        },
-      });
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            nome_completo: data.nome_completo,
+            role: data.role,
+          }),
+        }
+      );
       
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Erro ao criar usuário');
-
-      // 2. Create user_role entry
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          email: data.email,
-          role: data.role,
-          nome_completo: data.nome_completo,
-        });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao criar usuário');
       
-      if (roleError) throw roleError;
-      
-      return authData.user;
+      return result.user;
     },
     onSuccess: () => {
       toast.success('Usuário criado com sucesso!');
