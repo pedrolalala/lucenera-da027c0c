@@ -45,9 +45,14 @@ export default function RegistrarEntregaPage() {
   const isValidCodeFormat = (code: string) =>
     /^[0-9]{5,6}$/.test(code) || /^LUC-\d{1,6}$/i.test(code);
 
-  const validateCode = useCallback(async () => {
+  const validateCode = useCallback(async (force = false) => {
     const trimmedCode = codigoObra.trim();
     
+    // Skip re-validation if already validated successfully (prevents blur re-trigger)
+    if (!force && validationState === 'success' && obraData) {
+      return;
+    }
+
     if (!trimmedCode) {
       setValidationState('idle');
       setObraData(null);
@@ -110,7 +115,7 @@ export default function RegistrarEntregaPage() {
       description: separacao.cliente,
       className: 'bg-success text-success-foreground border-none',
     });
-  }, [codigoObra, findByCodigoObra, toast, user]);
+  }, [codigoObra, validationState, obraData, findByCodigoObra, toast]);
 
   const handleSubmit = async () => {
     if (!obraData) {
