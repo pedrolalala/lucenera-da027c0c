@@ -22,7 +22,7 @@ export interface Separacao {
   order_in_route: number | null;
   observacoes_internas: string | null;
   gestora_equipe: string;
-  numero_venda: string[];  // Changed to array
+  numero_venda: string[];
   solicitante: string | null;
   separacoes_parciais: string[] | null;
   nivel_complexidade: NivelComplexidade | null;
@@ -30,6 +30,7 @@ export interface Separacao {
   transportadora_nome: string | null;
   codigo_rastreamento: string | null;
   numero_entrega: string | null;
+  data_inicio_separacao: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,10 +80,15 @@ export function useSeparacoes() {
     );
 
     try {
-      // Simple update - only status field
+      // Update status + set data_inicio_separacao when entering "em_separacao"
+      const updatePayload: Record<string, unknown> = { status: newStatus };
+      if (newStatus === 'em_separacao') {
+        updatePayload.data_inicio_separacao = new Date().toISOString();
+      }
+      
       const { data, error: updateError } = await supabase
         .from('separacoes')
-        .update({ status: newStatus })
+        .update(updatePayload)
         .eq('id', id)
         .select();
 

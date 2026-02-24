@@ -263,6 +263,7 @@ export type Database = {
           codigo_rastreamento: string | null
           created_at: string
           data_entrega: string
+          data_inicio_separacao: string | null
           delivery_type: string
           endereco: string
           gestora_equipe: string
@@ -290,6 +291,7 @@ export type Database = {
           codigo_rastreamento?: string | null
           created_at?: string
           data_entrega: string
+          data_inicio_separacao?: string | null
           delivery_type?: string
           endereco: string
           gestora_equipe: string
@@ -317,6 +319,7 @@ export type Database = {
           codigo_rastreamento?: string | null
           created_at?: string
           data_entrega?: string
+          data_inicio_separacao?: string | null
           delivery_type?: string
           endereco?: string
           gestora_equipe?: string
