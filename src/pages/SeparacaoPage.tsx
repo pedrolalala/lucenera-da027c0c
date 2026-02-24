@@ -95,9 +95,9 @@ export default function SeparacaoPage() {
     };
     
     filteredSeparacoes.forEach((s) => {
-      if (s.status === 'em_separacao') {
-        // Show on every day from updated_at to data_entrega
-        const statusChangedAt = startOfDay(parseISO(s.updated_at));
+      if (s.status === 'em_separacao' && s.data_inicio_separacao) {
+        // Show on every day from data_inicio_separacao to data_entrega
+        const statusChangedAt = startOfDay(parseISO(s.data_inicio_separacao));
         const deliveryDate = startOfDay(parseISO(s.data_entrega));
         const rangeStart = isAfter(statusChangedAt, today) ? today : statusChangedAt;
         

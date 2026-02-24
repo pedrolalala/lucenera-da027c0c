@@ -48,13 +48,13 @@ export function useCalendarData(year: number, month: number) {
           .lte('data_entrega', monthEnd)
           .order('data_entrega', { ascending: true }),
         // Also fetch em_separacao entries whose delivery date is >= month start
-        // and whose updated_at (status change) is <= month end
+        // and whose data_inicio_separacao is <= month end
         supabase
           .from('separacoes')
           .select('*')
           .eq('status', 'em_separacao')
           .gte('data_entrega', monthStart)
-          .lte('updated_at', monthEnd + 'T23:59:59')
+          .lte('data_inicio_separacao', monthEnd + 'T23:59:59')
       ]);
 
       if (monthResult.error) throw monthResult.error;
@@ -113,9 +113,9 @@ export function useCalendarData(year: number, month: number) {
       };
       
       allEntregas.forEach((entrega) => {
-        if (entrega.status === 'em_separacao') {
-          // Show on every day from updated_at (status change) to data_entrega, clamped to current month
-          const statusChangedAt = startOfDay(parseISO(entrega.updated_at));
+        if (entrega.status === 'em_separacao' && entrega.data_inicio_separacao) {
+          // Show on every day from data_inicio_separacao to data_entrega, clamped to current month
+          const statusChangedAt = startOfDay(parseISO(entrega.data_inicio_separacao));
           const deliveryDate = startOfDay(parseISO(entrega.data_entrega));
           
           const rangeStart = isAfter(statusChangedAt, startDate) ? statusChangedAt : startDate;
