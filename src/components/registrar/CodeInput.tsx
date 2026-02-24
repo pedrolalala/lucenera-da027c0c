@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 interface CodeInputProps {
   value: string;
   onChange: (value: string) => void;
-  onValidate: () => void;
+  onValidate: (force?: boolean) => void;
   validationState: 'idle' | 'loading' | 'success' | 'error';
   errorMessage?: string;
 }
@@ -23,7 +23,7 @@ export function CodeInput({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      onValidate();
+      onValidate(true);
     }
   };
 
@@ -72,7 +72,7 @@ export function CodeInput({
           value={value}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          onBlur={onValidate}
+          onBlur={() => onValidate()}
           placeholder="Ex: LUC-0001 ou 26001"
           disabled={validationState === 'loading'}
           className={cn(
