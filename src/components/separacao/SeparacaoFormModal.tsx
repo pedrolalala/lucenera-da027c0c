@@ -90,7 +90,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [transportadoraNome, setTransportadoraNome] = useState('');
   const [codigoRastreamento, setCodigoRastreamento] = useState('');
   
-  const GESTORAS = ['Thais Gomes', 'Thairine Silva', 'Marina Pousa', 'Vinicius'];
+  const GESTORAS = ['Thais Gomes', 'Thairine Silva', 'Marina Pousa', 'Vinicius', 'Terezinha'];
   
   // Material state
   const [materialMethod, setMaterialMethod] = useState<MaterialMethod>(null);
