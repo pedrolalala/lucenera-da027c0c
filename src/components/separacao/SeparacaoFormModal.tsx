@@ -668,6 +668,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
     const hasValidTransportadora = tipoEntrega !== 'transportadora' || transportadoraNome.trim();
     
+    const hasValidEndereco = tipoEntrega === 'cliente_retira' || endereco.length >= 10;
+    
     return !!(
       hasValidCodigo &&
       numerosVenda.length >= 1 &&
@@ -675,7 +677,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       cliente.length >= 3 &&
       responsavel.length >= 3 &&
       (!telefone || isValidPhoneBR(telefone)) &&
-      endereco.length >= 10 &&
+      hasValidEndereco &&
       dataEntrega &&
       hasValidSchedule &&
       nivelComplexidade &&
