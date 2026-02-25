@@ -122,6 +122,10 @@ export default function SeparacaoPage() {
 
     // Sort by date (ascending - closest first)
     return Object.entries(groups)
+      .filter(([dateStr]) => {
+        const d = parseISO(dateStr);
+        return !isNaN(d.getTime());
+      })
       .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
       .map(([dateStr, items]) => ({
         date: parseISO(dateStr),
