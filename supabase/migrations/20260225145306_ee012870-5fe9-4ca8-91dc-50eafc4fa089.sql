@@ -1,0 +1,1 @@
+UPDATE separacoes SET data_entrega = '2026-02-25' WHERE codigo_obra = '004119';
