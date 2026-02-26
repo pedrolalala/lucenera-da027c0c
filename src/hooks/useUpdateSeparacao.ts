@@ -6,7 +6,7 @@ import { MaterialTipo, SeparacaoItem, DeliveryType } from './useCreateSeparacao'
 export interface UpdateSeparacaoData {
   id: string;
   codigo_obra: string;
-  numero_venda?: string[];  // Changed to array
+  numero_venda?: string[];
   separacoes_parciais?: string[];
   solicitante?: string;
   gestora_equipe: string;
@@ -24,6 +24,8 @@ export interface UpdateSeparacaoData {
   tipo_entrega?: 'lucenera_entrega' | 'transportadora' | 'cliente_retira' | 'correios';
   transportadora_nome?: string | null;
   codigo_rastreamento?: string | null;
+  tipo_pedido?: string;
+  garantia_detalhes?: string | null;
   items?: SeparacaoItem[];
 }
 
@@ -82,6 +84,8 @@ export function useUpdateSeparacao() {
           tipo_entrega: data.tipo_entrega || 'lucenera_entrega',
           transportadora_nome: data.transportadora_nome || null,
           codigo_rastreamento: data.codigo_rastreamento || null,
+          tipo_pedido: data.tipo_pedido || 'normal',
+          garantia_detalhes: data.garantia_detalhes || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', data.id);

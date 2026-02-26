@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star, Truck, Package, Building, Mail, Zap, Flame, CheckCircle, MinusCircle, Plus } from 'lucide-react';
+import { X, Tag, FileText as FileTextIcon, User, Phone, MapPin, Calendar, Check, Loader2, Table2, Paperclip, Clipboard, Pencil, Clock, CalendarClock, AlertTriangle, MessageSquare, Star, Truck, Package, Building, Mail, Zap, Flame, CheckCircle, MinusCircle, Plus, ShieldCheck, FileBox } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ interface SeparacaoFormModalProps {
 
 type MaterialMethod = 'digitar' | 'arquivos' | 'colar' | 'extrair_pdf' | 'sem_material' | null;
 
+type TipoPedido = 'normal' | 'garantia';
 type NivelComplexidade = 'facil' | 'medio' | 'dificil';
 type TipoEntrega = 'lucenera_entrega' | 'transportadora' | 'cliente_retira' | 'correios';
 
@@ -63,6 +64,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const parcialInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
+  // Tipo de Pedido - must be set first
+  const [tipoPedido, setTipoPedido] = useState<TipoPedido>('normal');
+  const [garantiaDetalhes, setGarantiaDetalhes] = useState('');
+  
   const [codigoObra, setCodigoObra] = useState('');
   const [codigoStatus, setCodigoStatus] = useState<CodigoStatus>('empty');
   const [codigoChanged, setCodigoChanged] = useState(false);
@@ -120,6 +125,10 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (!editData) return;
     
     setIsLoadingData(true);
+    
+    // Set tipo_pedido
+    setTipoPedido(((editData as any).tipo_pedido as TipoPedido) || 'normal');
+    setGarantiaDetalhes((editData as any).garantia_detalhes || '');
     
     // Set basic fields
     setCodigoObra(editData.codigo_obra);
@@ -321,11 +330,12 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
+    const isGarantia = tipoPedido === 'garantia';
 
     if (codigoObra.length < 5) {
       newErrors.codigo_obra = 'Código obrigatório (5-6 dígitos)';
     }
-    if (numerosVenda.length === 0) {
+    if (!isGarantia && numerosVenda.length === 0) {
       newErrors.numeros_venda = 'Adicione pelo menos 1 número de venda';
     }
     if (!gestoraEquipe) {
@@ -334,13 +344,13 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (cliente.length < 3) {
       newErrors.cliente = 'Mínimo 3 caracteres';
     }
-    if (responsavel.length < 3) {
+    if (!isGarantia && responsavel.length < 3) {
       newErrors.responsavel = 'Mínimo 3 caracteres';
     }
     if (telefone && !isValidPhoneBR(telefone)) {
       newErrors.telefone = 'Telefone inválido';
     }
-    if (tipoEntrega !== 'cliente_retira' && endereco.length < 10) {
+    if (!isGarantia && tipoEntrega !== 'cliente_retira' && endereco.length < 10) {
       newErrors.endereco = 'Mínimo 10 caracteres';
     }
     if (!dataEntrega) {
@@ -379,7 +389,6 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         newErrors.material = 'Adicione pelo menos 1 arquivo';
       }
     }
-    // If materialMethod is null or 'sem_material', NO validation needed - material is optional
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -463,6 +472,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         tipo_entrega: tipoEntrega,
         transportadora_nome: tipoEntrega === 'transportadora' ? transportadoraNome : null,
         codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
+        tipo_pedido: tipoPedido,
+        garantia_detalhes: tipoPedido === 'garantia' ? garantiaDetalhes : null,
         items: formItems,
       });
       separacaoId = editData.id;
@@ -489,6 +500,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         tipo_entrega: tipoEntrega,
         transportadora_nome: tipoEntrega === 'transportadora' ? transportadoraNome : null,
         codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
+        tipo_pedido: tipoPedido,
+        garantia_detalhes: tipoPedido === 'garantia' ? garantiaDetalhes : null,
       };
 
       // DEBUG: Log full insert data
@@ -610,6 +623,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   };
 
   const resetForm = () => {
+    setTipoPedido('normal');
+    setGarantiaDetalhes('');
     setCodigoObra('');
     setCodigoStatus('empty');
     setCodigoChanged(false);
@@ -658,6 +673,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   };
 
   const isFormValid = () => {
+    const isGarantia = tipoPedido === 'garantia';
     const visibleFiles = fileItems.filter(f => !f.markedForDeletion).length > 0;
     const hasMaterial = materialMethod === 'sem_material' || !materialMethod ||
       ((materialMethod === 'digitar' || materialMethod === 'colar') && items.length > 0) ||
@@ -668,14 +684,16 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     const hasValidCodigo = codigoObra.length >= 5 && codigoStatus !== 'invalid';
     const hasValidTransportadora = tipoEntrega !== 'transportadora' || transportadoraNome.trim();
     
-    const hasValidEndereco = tipoEntrega === 'cliente_retira' || endereco.length >= 10;
+    const hasValidEndereco = isGarantia || tipoEntrega === 'cliente_retira' || endereco.length >= 10;
+    const hasValidVenda = isGarantia || numerosVenda.length >= 1;
+    const hasValidResponsavel = isGarantia || responsavel.length >= 3;
     
     return !!(
       hasValidCodigo &&
-      numerosVenda.length >= 1 &&
+      hasValidVenda &&
       gestoraEquipe &&
       cliente.length >= 3 &&
-      responsavel.length >= 3 &&
+      hasValidResponsavel &&
       (!telefone || isValidPhoneBR(telefone)) &&
       hasValidEndereco &&
       dataEntrega &&
@@ -689,13 +707,14 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
   const getMissingFields = (): string[] => {
     const missing: string[] = [];
+    const isGarantia = tipoPedido === 'garantia';
     if (codigoObra.length < 5 || codigoStatus === 'invalid') missing.push('Código da Obra');
-    if (numerosVenda.length < 1) missing.push('Nº da Venda');
+    if (!isGarantia && numerosVenda.length < 1) missing.push('Nº da Venda');
     if (!gestoraEquipe) missing.push('Gestora');
     if (cliente.length < 3) missing.push('Cliente');
-    if (responsavel.length < 3) missing.push('Responsável');
+    if (!isGarantia && responsavel.length < 3) missing.push('Responsável');
     if (telefone && !isValidPhoneBR(telefone)) missing.push('Telefone inválido');
-    if (tipoEntrega !== 'cliente_retira' && endereco.length < 10) missing.push('Endereço');
+    if (!isGarantia && tipoEntrega !== 'cliente_retira' && endereco.length < 10) missing.push('Endereço');
     if (!dataEntrega) missing.push('Data de Entrega');
     if (deliveryType === 'scheduled' && !scheduledTime) missing.push('Horário');
     if (!nivelComplexidade) missing.push('Complexidade');
@@ -762,6 +781,79 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         ) : (
           <>
             <div className="p-6 space-y-8">
+              {/* Section 0: Tipo de Pedido */}
+              <section>
+                <h3 className="text-base font-semibold mb-2">Tipo de Pedido *</h3>
+                <p className="text-xs text-muted-foreground mb-4">Define as regras de obrigatoriedade do formulário</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTipoPedido('normal')}
+                    className={cn(
+                      "relative p-4 flex items-start gap-3 rounded-lg border-2 transition-all text-left",
+                      tipoPedido === 'normal'
+                        ? 'border-primary bg-primary/5 border-[3px]'
+                        : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                    )}
+                  >
+                    <Package className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoPedido === 'normal' ? 'text-primary' : 'text-muted-foreground')} />
+                    <div>
+                      <span className={cn("text-sm font-semibold", tipoPedido === 'normal' ? 'text-primary' : 'text-foreground')}>
+                        Pedido Normal
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Separação padrão com todos os campos obrigatórios</p>
+                    </div>
+                    {tipoPedido === 'normal' && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTipoPedido('garantia')}
+                    className={cn(
+                      "relative p-4 flex items-start gap-3 rounded-lg border-2 transition-all text-left",
+                      tipoPedido === 'garantia'
+                        ? 'border-amber-500 bg-amber-50 border-[3px]'
+                        : 'border-border hover:border-amber-400 hover:bg-amber-50/50'
+                    )}
+                  >
+                    <ShieldCheck className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoPedido === 'garantia' ? 'text-amber-600' : 'text-amber-400')} />
+                    <div>
+                      <span className={cn("text-sm font-semibold", tipoPedido === 'garantia' ? 'text-amber-700' : 'text-foreground')}>
+                        Entrega e Garantia
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Anos anteriores — nº venda, responsável e endereço opcionais</p>
+                    </div>
+                    {tipoPedido === 'garantia' && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </section>
+
+              {/* Garantia Details - only when garantia selected */}
+              {tipoPedido === 'garantia' && (
+                <section className="animate-in slide-in-from-top-2 duration-200">
+                  <h3 className="text-base font-semibold mb-2 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-amber-500" />
+                    Detalhes da Garantia
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">Descreva o motivo, referência ou número da garantia</p>
+                  <Textarea
+                    value={garantiaDetalhes}
+                    onChange={e => setGarantiaDetalhes(e.target.value)}
+                    placeholder="Ex: Garantia ref. 2024 - troca de peças danificadas no projeto X"
+                    className="min-h-[80px] resize-y"
+                  />
+                </section>
+              )}
+
               {/* Section 1: Dados da Obra */}
               <section>
                 <h3 className="text-base font-semibold mb-5">Dados do Pedido</h3>
@@ -827,7 +919,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Números da Venda - REQUIRED - DYNAMIC LIST */}
                       <div>
-                        <Label className="field-label">Números da Venda *</Label>
+                        <Label className="field-label">Números da Venda {tipoPedido !== 'garantia' ? '*' : '(opcional)'}</Label>
                         <p className="text-[11px] text-muted-foreground mt-0.5 mb-2">
                           Adicione um ou mais números de venda
                         </p>
@@ -1064,7 +1156,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
                   {/* Responsável */}
                   <div>
-                    <Label className="field-label">Responsável na Obra *</Label>
+                    <Label className="field-label">Responsável na Obra {tipoPedido !== 'garantia' ? '*' : '(opcional)'}</Label>
                     <div className="relative mt-1.5">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
@@ -1099,7 +1191,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
 
                   {/* Endereço */}
                   <div className="md:col-span-2">
-                    <Label className="field-label">Endereço de Entrega {tipoEntrega !== 'cliente_retira' ? '*' : '(opcional)'}</Label>
+                    <Label className="field-label">Endereço de Entrega {tipoPedido !== 'garantia' && tipoEntrega !== 'cliente_retira' ? '*' : '(opcional)'}</Label>
                     <div className="relative mt-1.5">
                       <MapPin className="absolute left-3 top-4 w-5 h-5 text-muted-foreground" />
                       <Textarea
