@@ -824,7 +824,7 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                     <ShieldCheck className={cn("w-6 h-6 mt-0.5 flex-shrink-0", tipoPedido === 'garantia' ? 'text-amber-600' : 'text-amber-400')} />
                     <div>
                       <span className={cn("text-sm font-semibold", tipoPedido === 'garantia' ? 'text-amber-700' : 'text-foreground')}>
-                        Entrega e Garantia
+                        Entrega de Garantia
                       </span>
                       <p className="text-xs text-muted-foreground mt-0.5">Anos anteriores — nº venda, responsável e endereço opcionais</p>
                     </div>
