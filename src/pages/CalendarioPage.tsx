@@ -1,22 +1,25 @@
 import { useState, useMemo } from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Plus, Package, List, CalendarDays } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Package, List, CalendarDays, Scissors, PackageCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CalendarGrid } from '@/components/calendario/CalendarGrid';
 import { DayDetails } from '@/components/calendario/DayDetails';
 import { CalendarLegend } from '@/components/calendario/CalendarLegend';
 import { SeparacaoFormModal } from '@/components/separacao/SeparacaoFormModal';
 import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
-import { useCalendarData } from '@/hooks/useCalendarData';
+import { useCalendarData, MonthData, DayData } from '@/hooks/useCalendarData';
 import { Separacao } from '@/hooks/useSeparacoes';
+import { StatusSeparacao } from '@/types/separacao';
 
 export default function CalendarioPage() {
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'todos' | StatusSeparacao>('todos');
   
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -32,11 +35,39 @@ export default function CalendarioPage() {
   
   const { data: monthData, isLoading, totalEntregas, refetch } = useCalendarData(year, month);
 
+  // Filter monthData by status
+  const filteredMonthData = useMemo(() => {
+    if (statusFilter === 'todos') return monthData;
+    
+    const filtered: MonthData = {};
+    Object.entries(monthData).forEach(([dateKey, dayData]) => {
+      const filteredEntregas = dayData.entregas.filter(e => e.status === statusFilter);
+      if (filteredEntregas.length > 0) {
+        filtered[dateKey] = {
+          total: filteredEntregas.length,
+          materialSolicitado: filteredEntregas.filter(e => e.status === 'material_solicitado').length,
+          emSeparacao: filteredEntregas.filter(e => e.status === 'em_separacao').length,
+          separado: filteredEntregas.filter(e => e.status === 'separado').length,
+          garantia: filteredEntregas.filter(e => e.status === 'matheus_separacao_garantia').length,
+          pendente: filteredEntregas.filter(e => e.status === 'pendente').length,
+          finalizado: filteredEntregas.filter(e => e.status === 'finalizado').length,
+          separando: filteredEntregas.filter(e => e.status === 'material_solicitado' || e.status === 'em_separacao').length,
+          entregas: filteredEntregas,
+        };
+      }
+    });
+    return filtered;
+  }, [monthData, statusFilter]);
+
+  const filteredTotalEntregas = useMemo(() => {
+    return Object.values(filteredMonthData).reduce((sum, day) => sum + day.total, 0);
+  }, [filteredMonthData]);
+
   const selectedDayData = useMemo(() => {
     if (!selectedDate) return null;
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
-    return monthData[dateKey] || null;
-  }, [selectedDate, monthData]);
+    return filteredMonthData[dateKey] || null;
+  }, [selectedDate, filteredMonthData]);
 
   const handlePrevMonth = () => {
     setCurrentMonth(prev => subMonths(prev, 1));
@@ -93,31 +124,52 @@ export default function CalendarioPage() {
       {/* Page Header */}
       <div className="sticky top-16 z-40 bg-card border-b border-border shadow-header">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Calendário de Entregas</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Visualize todas as entregas organizadas por data
-              </p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Calendário de Entregas</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Visualize todas as entregas organizadas por data
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/separacao')}
+                  className="gap-2"
+                >
+                  <List className="w-4 h-4" />
+                  <span className="hidden sm:inline">Ver em Lista</span>
+                </Button>
+                <Button
+                  onClick={handleOpenCreate}
+                  className="bg-success hover:bg-success-dark text-success-foreground"
+                >
+                  <Plus className="w-5 h-5 mr-2 sm:mr-2" />
+                  <span className="hidden sm:inline">Nova Separação</span>
+                  <span className="sm:hidden">Nova</span>
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/separacao')}
-                className="gap-2"
-              >
-                <List className="w-4 h-4" />
-                <span className="hidden sm:inline">Ver em Lista</span>
-              </Button>
-              <Button
-                onClick={handleOpenCreate}
-                className="bg-success hover:bg-success-dark text-success-foreground"
-              >
-                <Plus className="w-5 h-5 mr-2 sm:mr-2" />
-                <span className="hidden sm:inline">Nova Separação</span>
-                <span className="sm:hidden">Nova</span>
-              </Button>
-            </div>
+            <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)} className="w-full sm:w-auto">
+              <TabsList className="h-9">
+                <TabsTrigger value="todos" className="text-xs px-3 gap-1.5">
+                  Todos
+                </TabsTrigger>
+                <TabsTrigger value="material_solicitado" className="text-xs px-3 gap-1.5">
+                  <Package className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Solicitado</span>
+                </TabsTrigger>
+                <TabsTrigger value="em_separacao" className="text-xs px-3 gap-1.5">
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Em Separação</span>
+                </TabsTrigger>
+                <TabsTrigger value="separado" className="text-xs px-3 gap-1.5">
+                  <PackageCheck className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Separado</span>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
       </div>
@@ -140,7 +192,7 @@ export default function CalendarioPage() {
                   </h2>
                   <p className="text-sm text-muted-foreground flex items-center justify-center gap-1 mt-1">
                     <Package className="w-4 h-4" />
-                    {totalEntregas} {totalEntregas === 1 ? 'entrega' : 'entregas'} neste mês
+                    {filteredTotalEntregas} {filteredTotalEntregas === 1 ? 'entrega' : 'entregas'} neste mês
                   </p>
                 </div>
                 
@@ -161,7 +213,7 @@ export default function CalendarioPage() {
                 currentMonth={currentMonth}
                 selectedDate={selectedDate}
                 onSelectDate={handleSelectDate}
-                monthData={monthData}
+                monthData={filteredMonthData}
                 isLoading={isLoading}
               />
             </div>
