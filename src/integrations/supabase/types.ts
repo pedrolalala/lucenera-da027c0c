@@ -266,6 +266,7 @@ export type Database = {
           data_inicio_separacao: string | null
           delivery_type: string
           endereco: string
+          garantia_detalhes: string | null
           gestora_equipe: string
           id: string
           material_conteudo: string
@@ -282,6 +283,7 @@ export type Database = {
           status: string
           telefone: string | null
           tipo_entrega: string | null
+          tipo_pedido: string
           transportadora_nome: string | null
           updated_at: string
         }
@@ -294,6 +296,7 @@ export type Database = {
           data_inicio_separacao?: string | null
           delivery_type?: string
           endereco: string
+          garantia_detalhes?: string | null
           gestora_equipe: string
           id?: string
           material_conteudo: string
@@ -310,6 +313,7 @@ export type Database = {
           status?: string
           telefone?: string | null
           tipo_entrega?: string | null
+          tipo_pedido?: string
           transportadora_nome?: string | null
           updated_at?: string
         }
@@ -322,6 +326,7 @@ export type Database = {
           data_inicio_separacao?: string | null
           delivery_type?: string
           endereco?: string
+          garantia_detalhes?: string | null
           gestora_equipe?: string
           id?: string
           material_conteudo?: string
@@ -338,6 +343,7 @@ export type Database = {
           status?: string
           telefone?: string | null
           tipo_entrega?: string | null
+          tipo_pedido?: string
           transportadora_nome?: string | null
           updated_at?: string
         }
