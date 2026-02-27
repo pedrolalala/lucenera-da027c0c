@@ -34,7 +34,7 @@ export default function RouteOptimizerPage() {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   
   const todaysDeliveries = useMemo(() => {
-    return separacoes.filter(s => s.data_entrega === todayStr);
+    return separacoes.filter(s => s.data_entrega === todayStr && s.status === 'separado');
   }, [separacoes, todayStr]);
 
   // Sort deliveries: scheduled first (by time), then flexible
