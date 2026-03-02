@@ -12,22 +12,25 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
+const allNavItems = [
   {
     label: 'Separação',
     href: '/separacao',
     icon: Package,
+    hideForEntregador: true,
   },
   {
     label: 'Calendário',
     href: '/calendario',
     icon: CalendarDays,
+    hideForEntregador: true,
   },
   {
     label: 'Pendentes',
     href: '/pendentes',
     icon: AlertTriangle,
     highlight: true,
+    hideForEntregador: true,
   },
   {
     label: 'Registrar',
@@ -50,7 +53,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isEntregador } = useUserRole();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -79,7 +82,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
             {/* Navigation */}
             <nav className="flex items-center gap-1">
-              {navItems.map((item) => {
+              {allNavItems
+                .filter(item => !(isEntregador && item.hideForEntregador))
+                .map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
                   <Link

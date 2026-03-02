@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminRoute } from "@/components/auth/AdminRoute";
+import { EntregadorRoute } from "@/components/auth/EntregadorRoute";
 import LoginPage from "./pages/LoginPage";
 import SeparacaoPage from "./pages/SeparacaoPage";
 import CalendarioPage from "./pages/CalendarioPage";
@@ -19,6 +20,7 @@ import AdminSettingsPage from "./pages/admin/AdminSettingsPage";
 import AdminDevPage from "./pages/admin/AdminDevPage";
 import AdminLogsPage from "./pages/admin/AdminLogsPage";
 import NotFound from "./pages/NotFound";
+import { SmartRedirect } from "@/components/auth/SmartRedirect";
 
 const queryClient = new QueryClient();
 
@@ -34,29 +36,29 @@ const App = () => (
             <Route path="/login" element={<LoginPage />} />
             
             {/* Protected routes */}
-            <Route path="/" element={<Navigate to="/separacao" replace />} />
+            <Route path="/" element={<ProtectedRoute><SmartRedirect /></ProtectedRoute>} />
             <Route
               path="/separacao"
               element={
-                <ProtectedRoute>
+                <EntregadorRoute>
                   <SeparacaoPage />
-                </ProtectedRoute>
+                </EntregadorRoute>
               }
             />
             <Route
               path="/calendario"
               element={
-                <ProtectedRoute>
+                <EntregadorRoute>
                   <CalendarioPage />
-                </ProtectedRoute>
+                </EntregadorRoute>
               }
             />
             <Route
               path="/pendentes"
               element={
-                <ProtectedRoute>
+                <EntregadorRoute>
                   <PendentesPage />
-                </ProtectedRoute>
+                </EntregadorRoute>
               }
             />
             <Route

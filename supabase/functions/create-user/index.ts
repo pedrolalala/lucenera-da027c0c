@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     }
 
     // Parse request body
-    const { email, password, nome_completo, role } = await req.json();
+    const { email, password, nome_completo, role } = await req.json() as { email: string; password: string; nome_completo?: string; role?: 'admin' | 'user' | 'entregador' };
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: "Email e senha são obrigatórios" }), {

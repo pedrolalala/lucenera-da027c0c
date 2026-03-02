@@ -52,7 +52,8 @@ import {
   Loader2,
   RefreshCw,
   CheckCircle2,
-  Key
+  Key,
+  Truck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -63,7 +64,7 @@ interface UserRole {
   id: string;
   user_id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'entregador';
   nome_completo: string | null;
   created_at: string | null;
 }
@@ -85,7 +86,7 @@ export default function AdminUsersPage() {
     nome_completo: '',
     email: '',
     password: '',
-    role: 'user' as 'admin' | 'user',
+    role: 'user' as 'admin' | 'user' | 'entregador',
   });
 
   // Fetch users
@@ -212,6 +213,7 @@ export default function AdminUsersPage() {
 
   const adminCount = users?.filter(u => u.role === 'admin').length || 0;
   const userCount = users?.filter(u => u.role === 'user').length || 0;
+  const entregadorCount = users?.filter(u => u.role === 'entregador').length || 0;
 
   return (
     <AdminLayout>
@@ -265,6 +267,15 @@ export default function AdminUsersPage() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
+            <Truck className="w-8 h-8 text-orange-500" />
+            <div>
+              <p className="text-2xl font-bold text-orange-600">{entregadorCount}</p>
+              <p className="text-xs text-muted-foreground">Entregadores</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
             <CheckCircle2 className="w-8 h-8 text-green-500" />
             <div>
               <p className="text-2xl font-bold text-green-600">{users?.length || 0}</p>
@@ -295,6 +306,7 @@ export default function AdminUsersPage() {
                 <SelectItem value="all">Todas as permissões</SelectItem>
                 <SelectItem value="admin">Administradores</SelectItem>
                 <SelectItem value="user">Usuários</SelectItem>
+                <SelectItem value="entregador">Entregadores</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -327,7 +339,7 @@ export default function AdminUsersPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-                            user.role === 'admin' ? 'bg-purple-600' : 'bg-blue-500'
+                            user.role === 'admin' ? 'bg-purple-600' : user.role === 'entregador' ? 'bg-orange-500' : 'bg-blue-500'
                           }`}>
                             {(user.nome_completo || user.email)[0].toUpperCase()}
                           </div>
@@ -344,6 +356,11 @@ export default function AdminUsersPage() {
                           <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
                             <Crown className="w-3 h-3 mr-1" />
                             ADMINISTRADOR
+                          </Badge>
+                        ) : user.role === 'entregador' ? (
+                          <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100">
+                            <Truck className="w-3 h-3 mr-1" />
+                            ENTREGADOR
                           </Badge>
                         ) : (
                           <Badge variant="secondary">USUÁRIO</Badge>
@@ -487,7 +504,7 @@ export default function AdminUsersPage() {
             
             <div className="space-y-2">
               <Label>Nível de Acesso *</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, role: 'user' }))}
@@ -498,9 +515,24 @@ export default function AdminUsersPage() {
                   }`}
                 >
                   <UserCheck className="w-6 h-6 text-blue-500 mb-2" />
-                  <p className="font-semibold">Usuário Padrão</p>
+                  <p className="font-semibold text-sm">Usuário</p>
                   <p className="text-xs text-muted-foreground">
-                    Acesso às funcionalidades principais
+                    Acesso interno completo
+                  </p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, role: 'entregador' }))}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
+                    formData.role === 'entregador'
+                      ? 'border-orange-500 bg-orange-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Truck className="w-6 h-6 text-orange-500 mb-2" />
+                  <p className="font-semibold text-sm">Entregador</p>
+                  <p className="text-xs text-muted-foreground">
+                    Rota + entregas apenas
                   </p>
                 </button>
                 <button
@@ -513,12 +545,12 @@ export default function AdminUsersPage() {
                   }`}
                 >
                   <Badge className="absolute top-2 right-2 bg-red-500 text-[10px]">
-                    ACESSO TOTAL
+                    TOTAL
                   </Badge>
                   <Crown className="w-6 h-6 text-purple-500 mb-2" />
-                  <p className="font-semibold">Administrador</p>
+                  <p className="font-semibold text-sm">Admin</p>
                   <p className="text-xs text-muted-foreground">
-                    Controle total + painel admin
+                    Controle total
                   </p>
                 </button>
               </div>
@@ -582,13 +614,14 @@ export default function AdminUsersPage() {
               <Label>Nível de Acesso</Label>
               <Select 
                 value={formData.role} 
-                onValueChange={(value: 'admin' | 'user') => setFormData(prev => ({ ...prev, role: value }))}
+                onValueChange={(value: 'admin' | 'user' | 'entregador') => setFormData(prev => ({ ...prev, role: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Usuário Padrão</SelectItem>
+                  <SelectItem value="entregador">Entregador</SelectItem>
                   <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
@@ -633,7 +666,7 @@ export default function AdminUsersPage() {
           <DialogHeader>
             <div className="flex items-center gap-4">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold ${
-                selectedUser?.role === 'admin' ? 'bg-purple-600' : 'bg-blue-500'
+                selectedUser?.role === 'admin' ? 'bg-purple-600' : selectedUser?.role === 'entregador' ? 'bg-orange-500' : 'bg-blue-500'
               }`}>
                 {(selectedUser?.nome_completo || selectedUser?.email || 'U')[0].toUpperCase()}
               </div>
@@ -646,6 +679,11 @@ export default function AdminUsersPage() {
                   <Badge className="mt-1 bg-purple-100 text-purple-700">
                     <Crown className="w-3 h-3 mr-1" />
                     ADMINISTRADOR
+                  </Badge>
+                ) : selectedUser?.role === 'entregador' ? (
+                  <Badge className="mt-1 bg-orange-100 text-orange-700">
+                    <Truck className="w-3 h-3 mr-1" />
+                    ENTREGADOR
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className="mt-1">USUÁRIO</Badge>

@@ -6,7 +6,7 @@ interface UserRole {
   id: string;
   user_id: string;
   email: string;
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'entregador';
   nome_completo: string | null;
   created_at: string | null;
   updated_at: string | null;
@@ -40,6 +40,7 @@ export function useUserRole() {
     userRole,
     isAdmin: userRole?.role === 'admin',
     isUser: userRole?.role === 'user',
+    isEntregador: userRole?.role === 'entregador',
     isLoading,
     error,
     userName: userRole?.nome_completo || user?.email?.split('@')[0] || 'Usuário',
