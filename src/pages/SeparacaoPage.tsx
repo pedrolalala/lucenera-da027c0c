@@ -16,13 +16,14 @@ import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
 import { FiltroSegmento, StatusSeparacao } from '@/types/separacao';
 import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual, eachDayOfInterval } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, Scissors, PackageCheck } from 'lucide-react';
+import { Package, Scissors, PackageCheck, ShieldCheck } from 'lucide-react';
 
 export default function SeparacaoPage() {
   const navigate = useNavigate();
   const { separacoes, isLoading, updateStatus, refetch } = useSeparacoes();
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
   const [statusFilter, setStatusFilter] = useState<'todos' | StatusSeparacao>('todos');
+  const [tipoPedidoFilter, setTipoPedidoFilter] = useState<'todos' | 'normal' | 'garantia'>('todos');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingSeparacao, setEditingSeparacao] = useState<Separacao | null>(null);
@@ -52,6 +53,13 @@ export default function SeparacaoPage() {
       
       // Apply status filter
       if (statusFilter !== 'todos' && s.status !== statusFilter) return false;
+      
+      // Apply tipo pedido filter
+      if (tipoPedidoFilter !== 'todos') {
+        const tipo = s.tipo_pedido || 'normal';
+        if (tipoPedidoFilter === 'garantia' && tipo !== 'garantia' && !s.inclui_garantia) return false;
+        if (tipoPedidoFilter === 'normal' && (tipo === 'garantia' || s.inclui_garantia)) return false;
+      }
       
       // Apply date range filter first if active
       if (dateRange?.from) {
@@ -86,7 +94,7 @@ export default function SeparacaoPage() {
       if (!startDate) return true;
       return isAfter(entregaDate, startDate) || isEqual(entregaDate, startDate);
     });
-  }, [separacoes, filtro, dateRange, statusFilter]);
+  }, [separacoes, filtro, dateRange, statusFilter, tipoPedidoFilter]);
 
   // Group by date - expand "em_separacao" entries across days from updated_at to data_entrega
   const groupedByDate = useMemo(() => {
@@ -205,6 +213,23 @@ export default function SeparacaoPage() {
                   <TabsTrigger value="separado" className="text-xs px-3 gap-1.5">
                     <PackageCheck className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Separado</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Tabs value={tipoPedidoFilter} onValueChange={(v) => setTipoPedidoFilter(v as typeof tipoPedidoFilter)} className="w-full sm:w-auto">
+                <TabsList className="h-9">
+                  <TabsTrigger value="todos" className="text-xs px-3 gap-1.5">
+                    Todos
+                  </TabsTrigger>
+                  <TabsTrigger value="normal" className="text-xs px-3 gap-1.5">
+                    <Package className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Normal</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="garantia" className="text-xs px-3 gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Garantia</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
