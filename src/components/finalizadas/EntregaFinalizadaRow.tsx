@@ -1,4 +1,4 @@
-import { Eye, User, Clock } from 'lucide-react';
+import { Eye, User, Clock, Shield } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,12 +16,22 @@ export function EntregaFinalizadaRow({ entrega, onOpenDetails }: EntregaFinaliza
     ? differenceInCalendarDays(parseISO(entrega.data_entrega_real), parseISO(entrega.data_solicitacao))
     : null;
 
+  const isGarantia = entrega.tipo_pedido === 'garantia';
+
   return (
-    <div className="flex items-center gap-3 px-4 h-14 border-b border-border bg-card hover:bg-muted/50 transition-colors">
+    <div className="flex items-center gap-3 px-4 h-14 border-b border-border bg-card hover:bg-muted/50 transition-colors uppercase">
       {/* Badge Finalizado */}
       <span className="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full bg-green-500 text-white text-xs font-bold">
         Finalizado
       </span>
+
+      {/* Badge Garantia */}
+      {isGarantia && (
+        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-orange-100 text-orange-700 border border-orange-300 text-xs font-bold">
+          <Shield className="w-3 h-3" />
+          Garantia
+        </span>
+      )}
 
       {/* Número Entrega */}
       {entrega.numero_entrega && (
@@ -61,7 +71,7 @@ export function EntregaFinalizadaRow({ entrega, onOpenDetails }: EntregaFinaliza
         variant="outline"
         size="sm"
         onClick={() => onOpenDetails(entrega)}
-        className="shrink-0 h-8 text-[13px] border-border hover:bg-muted"
+        className="shrink-0 h-8 text-[13px] border-border hover:bg-muted normal-case"
       >
         <Eye className="w-3.5 h-3.5 mr-1.5" />
         Detalhes

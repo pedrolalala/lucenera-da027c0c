@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import {
   Calendar, MapPin, User, Star, FileText, Camera, AlertTriangle,
-  Save, Loader2, X, Plus,
+  Save, Loader2, X, Plus, Shield,
 } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
 import { Badge } from '@/components/ui/badge';
@@ -205,8 +205,16 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold">Detalhes da Entrega</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+            Detalhes da Entrega
+            {entrega.tipo_pedido === 'garantia' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-300 text-xs font-bold">
+                <Shield className="w-3 h-3" />
+                Garantia
+              </span>
+            )}
+          </DialogTitle>
+          <DialogDescription className="uppercase">
             {entrega.cliente} — {format(parseISO(entrega.data_entrega_real), 'dd/MM/yyyy')}
           </DialogDescription>
         </DialogHeader>
