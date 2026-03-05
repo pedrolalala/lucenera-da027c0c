@@ -1,12 +1,14 @@
 import { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield, AlertTriangle } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield, AlertTriangle, KeyRound } from 'lucide-react';
 import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -55,6 +57,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, signOut } = useAuth();
   const { isAdmin, isEntregador } = useUserRole();
   const { toast } = useToast();
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -137,6 +140,15 @@ export function AppLayout({ children }: AppLayoutProps) {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={() => setShowChangePassword(true)}
+                className="text-muted-foreground hover:text-foreground"
+                title="Alterar senha"
+              >
+                <KeyRound className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleLogout}
                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
@@ -152,6 +164,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       <main className="flex-1">
         {children}
       </main>
+
+      <ChangePasswordModal open={showChangePassword} onClose={() => setShowChangePassword(false)} />
     </div>
   );
 }
