@@ -1,13 +1,14 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield, AlertTriangle, KeyRound } from 'lucide-react';
+import { Package, CheckCircle2, Truck, LogOut, User, Route, CalendarDays, Shield, AlertTriangle, KeyRound, ChevronDown } from 'lucide-react';
 import luceneraHorizontal from '@/assets/logos/lucenera-horizontal.png';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 
 interface AppLayoutProps {
@@ -55,7 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isAdmin, isEntregador } = useUserRole();
+  const { isAdmin, isEntregador, userRole, userName } = useUserRole();
   const { toast } = useToast();
   const [showChangePassword, setShowChangePassword] = useState(false);
 
@@ -128,33 +129,46 @@ export function AppLayout({ children }: AppLayoutProps) {
             </nav>
 
             {/* User Menu */}
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                  <User className="w-4 h-4 text-muted-foreground" />
-                </div>
-                <span className="text-sm font-medium text-foreground max-w-[120px] truncate">
-                  {user?.email?.split('@')[0]}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowChangePassword(true)}
-                className="text-muted-foreground hover:text-foreground"
-                title="Alterar senha"
-              >
-                <KeyRound className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Sair</span>
-              </Button>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors">
+                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <span className="hidden sm:inline text-sm font-medium text-foreground max-w-[120px] truncate">
+                      {userName}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-64 p-0">
+                  <div className="p-4 space-y-1">
+                    <p className="text-sm font-semibold text-foreground truncate">{userName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wide bg-muted text-muted-foreground">
+                      {userRole?.role === 'admin' ? '🛡️ Administrador' : userRole?.role === 'entregador' ? '🚚 Entregador' : '👤 Usuário'}
+                    </span>
+                  </div>
+                  <Separator />
+                  <div className="p-1.5">
+                    <button
+                      onClick={() => setShowChangePassword(true)}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-foreground"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      Alterar senha
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md hover:bg-destructive/10 transition-colors text-destructive"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sair
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </div>
