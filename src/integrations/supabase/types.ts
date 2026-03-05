@@ -267,8 +267,11 @@ export type Database = {
           delivery_type: string
           endereco: string
           garantia_detalhes: string | null
+          garantia_motivo: string | null
+          garantia_peca: string | null
           gestora_equipe: string
           id: string
+          inclui_garantia: boolean
           material_conteudo: string
           material_tipo: string | null
           nivel_complexidade: string | null
@@ -297,8 +300,11 @@ export type Database = {
           delivery_type?: string
           endereco: string
           garantia_detalhes?: string | null
+          garantia_motivo?: string | null
+          garantia_peca?: string | null
           gestora_equipe: string
           id?: string
+          inclui_garantia?: boolean
           material_conteudo: string
           material_tipo?: string | null
           nivel_complexidade?: string | null
@@ -327,8 +333,11 @@ export type Database = {
           delivery_type?: string
           endereco?: string
           garantia_detalhes?: string | null
+          garantia_motivo?: string | null
+          garantia_peca?: string | null
           gestora_equipe?: string
           id?: string
+          inclui_garantia?: boolean
           material_conteudo?: string
           material_tipo?: string | null
           nivel_complexidade?: string | null

@@ -89,6 +89,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
   const [scheduledTime, setScheduledTime] = useState('');
   const [observacoesInternas, setObservacoesInternas] = useState('');
   
+  // Garantia na mesma entrega (for normal orders)
+  const [incluiGarantia, setIncluiGarantia] = useState(false);
+  const [garantiaPeca, setGarantiaPeca] = useState('');
+  const [garantiaMotivo, setGarantiaMotivo] = useState('');
+  
   // New fields
   const [nivelComplexidade, setNivelComplexidade] = useState<NivelComplexidade>('medio');
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>('lucenera_entrega');
@@ -156,6 +161,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setDeliveryType((editData as any).delivery_type || 'flexible');
     setScheduledTime((editData as any).scheduled_time?.slice(0, 5) || '');
     setObservacoesInternas((editData as any).observacoes_internas || '');
+    
+    // Garantia addon
+    setIncluiGarantia((editData as any).inclui_garantia || false);
+    setGarantiaPeca((editData as any).garantia_peca || '');
+    setGarantiaMotivo((editData as any).garantia_motivo || '');
     
     // New fields
     setNivelComplexidade((editData as any).nivel_complexidade || 'medio');
@@ -373,6 +383,16 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       newErrors.transportadora_nome = 'Nome da transportadora obrigatório';
     }
 
+    // Garantia addon validation
+    if (tipoPedido === 'normal' && incluiGarantia) {
+      if (!garantiaPeca.trim()) {
+        newErrors.material = 'Informe a peça de garantia';
+      }
+      if (!garantiaMotivo.trim()) {
+        if (!newErrors.material) newErrors.material = 'Descreva o motivo da garantia';
+      }
+    }
+
     // BUG 3 FIX: Material is OPTIONAL - only validate when user actively selected a method that requires content
     if (materialMethod === 'digitar' || materialMethod === 'colar') {
       if (items.length === 0) {
@@ -474,6 +494,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
         tipo_pedido: tipoPedido,
         garantia_detalhes: tipoPedido === 'garantia' ? garantiaDetalhes : null,
+        inclui_garantia: tipoPedido === 'normal' ? incluiGarantia : false,
+        garantia_peca: (tipoPedido === 'normal' && incluiGarantia) ? garantiaPeca : null,
+        garantia_motivo: (tipoPedido === 'normal' && incluiGarantia) ? garantiaMotivo : null,
         items: formItems,
       });
       separacaoId = editData.id;
@@ -502,6 +525,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
         codigo_rastreamento: tipoEntrega === 'correios' ? codigoRastreamento : null,
         tipo_pedido: tipoPedido,
         garantia_detalhes: tipoPedido === 'garantia' ? garantiaDetalhes : null,
+        inclui_garantia: tipoPedido === 'normal' ? incluiGarantia : false,
+        garantia_peca: (tipoPedido === 'normal' && incluiGarantia) ? garantiaPeca : null,
+        garantia_motivo: (tipoPedido === 'normal' && incluiGarantia) ? garantiaMotivo : null,
       };
 
       // DEBUG: Log full insert data
@@ -642,6 +668,9 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     setDeliveryType('flexible');
     setScheduledTime('');
     setObservacoesInternas('');
+    setIncluiGarantia(false);
+    setGarantiaPeca('');
+    setGarantiaMotivo('');
     setNivelComplexidade('medio');
     setTipoEntrega('lucenera_entrega');
     setTransportadoraNome('');
@@ -688,6 +717,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     const hasValidVenda = isGarantia || numerosVenda.length >= 1;
     const hasValidResponsavel = isGarantia || responsavel.length >= 3;
     
+    const hasValidGarantiaAddon = tipoPedido !== 'normal' || !incluiGarantia || (garantiaPeca.trim() && garantiaMotivo.trim());
+    
     return !!(
       hasValidCodigo &&
       hasValidVenda &&
@@ -701,7 +732,8 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
       nivelComplexidade &&
       tipoEntrega &&
       hasValidTransportadora &&
-      hasMaterial
+      hasMaterial &&
+      hasValidGarantiaAddon
     );
   };
 
@@ -720,6 +752,11 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
     if (!nivelComplexidade) missing.push('Complexidade');
     if (!tipoEntrega) missing.push('Tipo de Entrega');
     if (tipoEntrega === 'transportadora' && !transportadoraNome.trim()) missing.push('Transportadora');
+    
+    if (tipoPedido === 'normal' && incluiGarantia) {
+      if (!garantiaPeca.trim()) missing.push('Peça de garantia');
+      if (!garantiaMotivo.trim()) missing.push('Motivo da garantia');
+    }
     
     const visibleFiles = fileItems.filter(f => !f.markedForDeletion).length > 0;
     if (materialMethod === 'digitar' || materialMethod === 'colar') {
@@ -1441,6 +1478,75 @@ export function SeparacaoFormModal({ isOpen, onClose, onSuccess, editData }: Sep
                   </div>
                 </div>
               </section>
+
+              {/* Section 3.5: Garantia na mesma entrega (only for normal orders) */}
+              {tipoPedido === 'normal' && (
+                <section>
+                  <div className="mb-4">
+                    <h3 className="text-base font-semibold flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-amber-500" />
+                      Inclui peça de garantia? (Opcional)
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Marque se esta entrega normal também inclui uma peça de garantia
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setIncluiGarantia(!incluiGarantia)}
+                      className={cn(
+                        "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                        incluiGarantia ? 'bg-amber-500' : 'bg-muted'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                          incluiGarantia ? 'translate-x-6' : 'translate-x-1'
+                        )}
+                      />
+                    </button>
+                    <span className="text-sm font-medium">
+                      {incluiGarantia ? 'Sim, inclui peça de garantia' : 'Não inclui garantia'}
+                    </span>
+                  </div>
+
+                  {incluiGarantia && (
+                    <div className="space-y-4 animate-in slide-in-from-top-2 duration-200 border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 rounded-lg p-4">
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Qual peça é de garantia? <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          value={garantiaPeca}
+                          onChange={(e) => setGarantiaPeca(e.target.value)}
+                          placeholder="Ex: Disjuntor 32A, Quadro de distribuição..."
+                          className="mt-1.5"
+                        />
+                        {incluiGarantia && !garantiaPeca.trim() && (
+                          <p className="text-xs text-destructive mt-1">Informe a peça de garantia</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">
+                          O que aconteceu? (motivo da garantia) <span className="text-destructive">*</span>
+                        </Label>
+                        <Textarea
+                          value={garantiaMotivo}
+                          onChange={(e) => setGarantiaMotivo(e.target.value)}
+                          placeholder="Ex: Peça veio com defeito, cliente relatou que parou de funcionar após 2 semanas..."
+                          className="mt-1.5 min-h-[80px]"
+                        />
+                        {incluiGarantia && !garantiaMotivo.trim() && (
+                          <p className="text-xs text-destructive mt-1">Descreva o motivo da garantia</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* Section 4: Material para Separação - Optional */}
               <section>
