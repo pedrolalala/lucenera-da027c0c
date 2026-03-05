@@ -33,9 +33,8 @@ export function CodeInput({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    // Allow numeric (codigo_obra) or LUC-XXXX format (numero_entrega)
-    if (/^LUC/i.test(raw)) {
-      // Format as LUC- prefix
+    // Allow LUC prefix at any stage of typing (l, lu, luc, luc-, luc-0001)
+    if (/^l/i.test(raw)) {
       onChange(raw.toUpperCase());
     } else {
       // Allow only digits for codigo_obra
