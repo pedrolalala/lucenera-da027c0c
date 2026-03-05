@@ -238,7 +238,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
             {/* Horário do Pedido */}
             {separacao.created_at && (
               <div>
-                <p className="field-label mb-1">Horário do Pedido</p>
+                <p className="field-label mb-1">Data do Pedido</p>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <p className="field-value">
