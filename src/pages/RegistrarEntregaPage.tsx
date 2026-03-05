@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Truck, Loader2, AlertTriangle } from 'lucide-react';
+import { Truck, Loader2, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CodeInput } from '@/components/registrar/CodeInput';
 import { ObraResumoCard } from '@/components/registrar/ObraResumoCard';
@@ -215,6 +215,36 @@ export default function RegistrarEntregaPage() {
 
           {/* Step 2: Obra Summary (when validated) */}
           {obraData && <ObraResumoCard separacao={obraData} />}
+
+          {/* Warranty alert */}
+          {obraData && (obraData.inclui_garantia || obraData.tipo_pedido === 'garantia') && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-400 rounded-xl p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                <h3 className="text-base font-bold text-amber-800 dark:text-amber-300 uppercase">
+                  {obraData.tipo_pedido === 'garantia' ? '⚠️ Entrega de Garantia' : '⚠️ Inclui Peça de Garantia'}
+                </h3>
+              </div>
+              {obraData.tipo_pedido === 'garantia' && obraData.garantia_detalhes && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase">Detalhes da garantia:</p>
+                  <p className="text-sm text-amber-900 dark:text-amber-200 mt-1">{obraData.garantia_detalhes}</p>
+                </div>
+              )}
+              {obraData.inclui_garantia && obraData.garantia_peca && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase">Peça de garantia:</p>
+                  <p className="text-sm text-amber-900 dark:text-amber-200 mt-1 font-medium">{obraData.garantia_peca}</p>
+                </div>
+              )}
+              {obraData.inclui_garantia && obraData.garantia_motivo && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase">Motivo:</p>
+                  <p className="text-sm text-amber-900 dark:text-amber-200 mt-1">{obraData.garantia_motivo}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Step 3: Photo Upload */}
           {obraData && (

@@ -33,6 +33,11 @@ export interface Separacao {
   data_inicio_separacao: string | null;
   created_at: string;
   updated_at: string;
+  tipo_pedido?: string;
+  garantia_detalhes?: string | null;
+  inclui_garantia?: boolean;
+  garantia_peca?: string | null;
+  garantia_motivo?: string | null;
 }
 
 export function useSeparacoes() {
