@@ -242,6 +242,18 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
             <div>
               <p className="text-sm font-semibold text-foreground mb-3">Informações Gerais</p>
               <div className="grid grid-cols-2 gap-3">
+                {/* Horário do Pedido */}
+                {entrega.created_at && (
+                  <div>
+                    <p className="field-label mb-1">Horário do Pedido</p>
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <p className="text-sm text-foreground">
+                        {format(parseISO(entrega.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 {entrega.gestora_equipe && (
                   <div>
                     <p className="field-label mb-1">Gestora responsável</p>
