@@ -235,6 +235,19 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
 
           {/* Info grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Horário do Pedido */}
+            {separacao.created_at && (
+              <div>
+                <p className="field-label mb-1">Horário do Pedido</p>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <p className="field-value">
+                    {format(parseISO(separacao.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div>
               <p className="field-label mb-1">Responsável</p>
               <div className="flex items-center gap-2">
