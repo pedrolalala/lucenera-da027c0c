@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { FilterDropdown } from '@/components/ui/filter-dropdown';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { DateSection } from '@/components/separacao/DateSection';
 import { SeparacaoCard } from '@/components/separacao/SeparacaoCard';
@@ -218,23 +219,19 @@ export default function SeparacaoPage() {
               </Tabs>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Tabs value={tipoPedidoFilter} onValueChange={(v) => setTipoPedidoFilter(v as typeof tipoPedidoFilter)} className="w-full sm:w-auto">
-                <TabsList className="h-9">
-                  <TabsTrigger value="todos" className="text-xs px-3 gap-1.5">
-                    Todos
-                  </TabsTrigger>
-                  <TabsTrigger value="normal" className="text-xs px-3 gap-1.5">
-                    <Package className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Normal</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="garantia" className="text-xs px-3 gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Garantia</span>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={tipoPedidoFilter} onValueChange={(v) => setTipoPedidoFilter(v as typeof tipoPedidoFilter)}>
+                <SelectTrigger className="w-[160px] bg-card border-border">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os tipos</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="garantia">Garantia</SelectItem>
+                </SelectContent>
+              </Select>
               <DateRangePicker
                 value={dateRange}
                 onChange={setDateRange}
