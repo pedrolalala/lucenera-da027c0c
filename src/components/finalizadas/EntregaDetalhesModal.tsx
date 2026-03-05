@@ -245,7 +245,7 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
                 {/* Horário do Pedido */}
                 {entrega.created_at && (
                   <div>
-                    <p className="field-label mb-1">Horário do Pedido</p>
+                    <p className="field-label mb-1">Data do Pedido</p>
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                       <p className="text-sm text-foreground">
