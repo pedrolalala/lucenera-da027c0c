@@ -26,6 +26,9 @@ export interface UpdateSeparacaoData {
   codigo_rastreamento?: string | null;
   tipo_pedido?: string;
   garantia_detalhes?: string | null;
+  inclui_garantia?: boolean;
+  garantia_peca?: string | null;
+  garantia_motivo?: string | null;
   items?: SeparacaoItem[];
 }
 
@@ -86,6 +89,9 @@ export function useUpdateSeparacao() {
           codigo_rastreamento: data.codigo_rastreamento || null,
           tipo_pedido: data.tipo_pedido || 'normal',
           garantia_detalhes: data.garantia_detalhes || null,
+          inclui_garantia: data.inclui_garantia || false,
+          garantia_peca: data.garantia_peca || null,
+          garantia_motivo: data.garantia_motivo || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', data.id);
