@@ -17,11 +17,12 @@ export interface EntregaFinalizada {
   observacoes: string | null;
   observacoes_internas: string | null;
   gestora_equipe: string | null;
-  numero_pedido: string | null;  // Stores joined vendas
-  vendedor: string | null;       // Stores solicitante
+  numero_pedido: string | null;
+  vendedor: string | null;
   numero_entrega: string | null;
   data_solicitacao: string | null;
   created_at: string;
+  tipo_pedido?: string;
 }
 
 export function useEntregasFinalizadas() {
@@ -37,12 +38,17 @@ export function useEntregasFinalizadas() {
       
       const { data, error: fetchError } = await supabase
         .from('entregas_finalizadas')
-        .select('*')
+        .select('*, separacoes:separacao_id(tipo_pedido)')
         .order('data_entrega_real', { ascending: false });
 
       if (fetchError) throw fetchError;
       
-      setEntregas((data as EntregaFinalizada[]) || []);
+      const mapped = (data || []).map((row: any) => ({
+        ...row,
+        tipo_pedido: row.separacoes?.tipo_pedido || 'normal',
+        separacoes: undefined,
+      })) as EntregaFinalizada[];
+      setEntregas(mapped);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro ao carregar entregas';
       setError(message);
