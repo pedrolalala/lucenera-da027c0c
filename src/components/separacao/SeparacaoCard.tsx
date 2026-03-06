@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Phone, MapPin, User, Check, RotateCcw, Pencil, Clock,
   AlertTriangle, Star, Loader2, FileText, Truck, Package,
-  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus
+  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus, Trash2
 } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,15 +13,22 @@ import { Button } from '@/components/ui/button';
 import { MaterialDisplay } from './MaterialDisplay';
 import { StatusSeparacao } from '@/types/separacao';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface SeparacaoCardProps {
   separacao: Separacao;
   onStatusChange: (id: string, newStatus: StatusSeparacao) => void;
   onEdit: (separacao: Separacao) => void;
+  onDelete?: (id: string) => void;
   isHighlighted?: boolean;
+  isAdmin?: boolean;
 }
 
-export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted }: SeparacaoCardProps) {
+export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isHighlighted, isAdmin }: SeparacaoCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFullObservacoes, setShowFullObservacoes] = useState(false);
   const isScheduled = separacao.delivery_type === 'scheduled';
@@ -343,8 +350,41 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted
             />
           )}
 
-          {/* Edit button */}
-          <div className="flex justify-end pt-1">
+          {/* Edit + Delete buttons */}
+          <div className="flex justify-end gap-2 pt-1">
+            {isAdmin && onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Você está prestes a excluir o pedido de <strong>{separacao.cliente}</strong> 
+                      {separacao.numero_entrega && <> ({separacao.numero_entrega})</>}. 
+                      Esta ação é irreversível e removerá todos os itens e arquivos associados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(separacao.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Sim, excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Button
               onClick={() => onEdit(separacao)}
               variant="outline"

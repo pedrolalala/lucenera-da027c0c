@@ -15,13 +15,15 @@ import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
 import { Button } from '@/components/ui/button';
 import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
 import { FiltroSegmento, StatusSeparacao } from '@/types/separacao';
+import { useUserRole } from '@/hooks/useUserRole';
 import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual, eachDayOfInterval } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, Scissors, PackageCheck, ShieldCheck } from 'lucide-react';
 
 export default function SeparacaoPage() {
   const navigate = useNavigate();
-  const { separacoes, isLoading, updateStatus, refetch } = useSeparacoes();
+  const { separacoes, isLoading, updateStatus, deleteSeparacao, refetch } = useSeparacoes();
+  const { isAdmin } = useUserRole();
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
   const [statusFilter, setStatusFilter] = useState<'todos' | StatusSeparacao>('todos');
   const [tipoPedidoFilter, setTipoPedidoFilter] = useState<'todos' | 'normal' | 'garantia'>('todos');
@@ -268,7 +270,9 @@ export default function SeparacaoPage() {
                   separacao={separacao}
                   onStatusChange={handleStatusChange}
                   onEdit={handleOpenEdit}
+                  onDelete={deleteSeparacao}
                   isHighlighted={separacao.id === highlightedId}
+                  isAdmin={isAdmin}
                 />
               ))}
             </DateSection>
