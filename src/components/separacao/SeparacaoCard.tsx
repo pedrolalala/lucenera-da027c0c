@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Phone, MapPin, User, Check, RotateCcw, Pencil, Clock,
   AlertTriangle, Star, Loader2, FileText, Truck, Package,
-  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus, Trash2
+  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus, Trash2, Shield
 } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,6 +32,8 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isH
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFullObservacoes, setShowFullObservacoes] = useState(false);
   const isScheduled = separacao.delivery_type === 'scheduled';
+  const isGarantia = separacao.tipo_pedido === 'garantia';
+  const hasGarantiaAddon = separacao.inclui_garantia === true;
 
   const handlePhoneClick = () => {
     if (separacao.telefone) {
@@ -146,6 +148,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isH
         'bg-card rounded-xl shadow-card transition-all duration-300 hover:shadow-card-hover overflow-hidden',
         getBorderClass(),
         isScheduled && 'ring-2 ring-orange-200',
+        (isGarantia || hasGarantiaAddon) && 'ring-2 ring-orange-300 bg-orange-50/30',
         isHighlighted && 'ring-2 ring-primary ring-offset-2 animate-pulse'
       )}
     >
@@ -164,6 +167,20 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isH
 
         {/* Complexity */}
         {getNivelBadge()}
+
+        {/* Garantia badge */}
+        {isGarantia && (
+          <Badge variant="outline" className="border-orange-300 bg-orange-100 text-orange-700 shrink-0 font-bold text-xs">
+            <Shield className="w-3 h-3 mr-1" />
+            Garantia
+          </Badge>
+        )}
+        {!isGarantia && hasGarantiaAddon && (
+          <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-600 shrink-0 text-xs">
+            <Shield className="w-3 h-3 mr-1" />
+            + Garantia
+          </Badge>
+        )}
 
         {/* Client name + code */}
         <div className="flex-1 min-w-0">
