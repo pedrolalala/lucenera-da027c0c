@@ -148,6 +148,7 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isH
         'bg-card rounded-xl shadow-card transition-all duration-300 hover:shadow-card-hover overflow-hidden',
         getBorderClass(),
         isScheduled && 'ring-2 ring-orange-200',
+        (isGarantia || hasGarantiaAddon) && 'ring-2 ring-orange-300 bg-orange-50/30',
         isHighlighted && 'ring-2 ring-primary ring-offset-2 animate-pulse'
       )}
     >
