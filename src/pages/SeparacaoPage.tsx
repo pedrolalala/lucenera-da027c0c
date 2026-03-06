@@ -15,6 +15,7 @@ import { CreateRouteModal } from '@/components/separacao/CreateRouteModal';
 import { Button } from '@/components/ui/button';
 import { useSeparacoes, Separacao } from '@/hooks/useSeparacoes';
 import { FiltroSegmento, StatusSeparacao } from '@/types/separacao';
+import { useUserRole } from '@/hooks/useUserRole';
 import { format, subDays, subMonths, isAfter, isBefore, startOfDay, parseISO, isEqual, eachDayOfInterval } from 'date-fns';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Package, Scissors, PackageCheck, ShieldCheck } from 'lucide-react';
