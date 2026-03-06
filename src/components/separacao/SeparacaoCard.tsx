@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Phone, MapPin, User, Check, RotateCcw, Pencil, Clock,
   AlertTriangle, Star, Loader2, FileText, Truck, Package,
-  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus, Trash2
+  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus, Trash2, Shield
 } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
