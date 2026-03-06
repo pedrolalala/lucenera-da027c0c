@@ -132,6 +132,35 @@ export function useSeparacoes() {
     }
   };
 
+  const deleteSeparacao = async (id: string) => {
+    try {
+      // Delete related records first (arquivos, itens)
+      await supabase.from('separacao_arquivos').delete().eq('separacao_id', id);
+      await supabase.from('separacao_itens').delete().eq('separacao_id', id);
+      
+      const { error: deleteError } = await supabase
+        .from('separacoes')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+
+      setSeparacoes(prev => prev.filter(s => s.id !== id));
+      toast({
+        title: 'Pedido excluído',
+        description: 'O pedido foi removido com sucesso.',
+        className: 'bg-success text-success-foreground border-none',
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao excluir pedido';
+      toast({
+        title: 'Erro ao excluir',
+        description: message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const findByCodigoObra = async (codigo: string): Promise<Separacao | null> => {
     try {
       // Support both codigo_obra (numeric) and numero_entrega (LUC-XXXX) formats
