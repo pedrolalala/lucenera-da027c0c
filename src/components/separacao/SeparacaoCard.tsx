@@ -168,6 +168,20 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isH
         {/* Complexity */}
         {getNivelBadge()}
 
+        {/* Garantia badge */}
+        {isGarantia && (
+          <Badge variant="outline" className="border-orange-300 bg-orange-100 text-orange-700 shrink-0 font-bold text-xs">
+            <Shield className="w-3 h-3 mr-1" />
+            Garantia
+          </Badge>
+        )}
+        {!isGarantia && hasGarantiaAddon && (
+          <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-600 shrink-0 text-xs">
+            <Shield className="w-3 h-3 mr-1" />
+            + Garantia
+          </Badge>
+        )}
+
         {/* Client name + code */}
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-foreground truncate block">{separacao.cliente}</span>
