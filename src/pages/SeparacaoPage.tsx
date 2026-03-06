@@ -270,7 +270,9 @@ export default function SeparacaoPage() {
                   separacao={separacao}
                   onStatusChange={handleStatusChange}
                   onEdit={handleOpenEdit}
+                  onDelete={deleteSeparacao}
                   isHighlighted={separacao.id === highlightedId}
+                  isAdmin={isAdmin}
                 />
               ))}
             </DateSection>

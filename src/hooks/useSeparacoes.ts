@@ -195,6 +195,7 @@ export function useSeparacoes() {
     isLoading,
     error,
     updateStatus,
+    deleteSeparacao,
     findByCodigoObra,
     refetch: fetchSeparacoes,
   };

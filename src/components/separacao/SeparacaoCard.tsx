@@ -350,8 +350,41 @@ export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isH
             />
           )}
 
-          {/* Edit button */}
-          <div className="flex justify-end pt-1">
+          {/* Edit + Delete buttons */}
+          <div className="flex justify-end gap-2 pt-1">
+            {isAdmin && onDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-destructive text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Você está prestes a excluir o pedido de <strong>{separacao.cliente}</strong> 
+                      {separacao.numero_entrega && <> ({separacao.numero_entrega})</>}. 
+                      Esta ação é irreversível e removerá todos os itens e arquivos associados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(separacao.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Sim, excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <Button
               onClick={() => onEdit(separacao)}
               variant="outline"
