@@ -28,7 +28,7 @@ interface SeparacaoCardProps {
   isAdmin?: boolean;
 }
 
-export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted }: SeparacaoCardProps) {
+export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isHighlighted, isAdmin }: SeparacaoCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFullObservacoes, setShowFullObservacoes] = useState(false);
   const isScheduled = separacao.delivery_type === 'scheduled';
