@@ -22,7 +22,8 @@ import { Package, Scissors, PackageCheck, ShieldCheck } from 'lucide-react';
 
 export default function SeparacaoPage() {
   const navigate = useNavigate();
-  const { separacoes, isLoading, updateStatus, refetch } = useSeparacoes();
+  const { separacoes, isLoading, updateStatus, deleteSeparacao, refetch } = useSeparacoes();
+  const { isAdmin } = useUserRole();
   const [filtro, setFiltro] = useState<FiltroSegmento>('todas');
   const [statusFilter, setStatusFilter] = useState<'todos' | StatusSeparacao>('todos');
   const [tipoPedidoFilter, setTipoPedidoFilter] = useState<'todos' | 'normal' | 'garantia'>('todos');
