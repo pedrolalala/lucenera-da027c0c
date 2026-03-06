@@ -31,7 +31,8 @@ interface SeparacaoCardProps {
 export function SeparacaoCard({ separacao, onStatusChange, onEdit, onDelete, isHighlighted, isAdmin }: SeparacaoCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFullObservacoes, setShowFullObservacoes] = useState(false);
-  const isScheduled = separacao.delivery_type === 'scheduled';
+  const isGarantia = separacao.tipo_pedido === 'garantia';
+  const hasGarantiaAddon = separacao.inclui_garantia === true;
 
   const handlePhoneClick = () => {
     if (separacao.telefone) {
