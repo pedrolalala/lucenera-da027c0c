@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Phone, MapPin, User, Check, RotateCcw, Pencil, Clock,
   AlertTriangle, Star, Loader2, FileText, Truck, Package,
-  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus
+  Building, Mail, Flame, Zap, CheckCircle, ChevronDown, ChevronUp, CalendarPlus, Trash2
 } from 'lucide-react';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -13,12 +13,19 @@ import { Button } from '@/components/ui/button';
 import { MaterialDisplay } from './MaterialDisplay';
 import { StatusSeparacao } from '@/types/separacao';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface SeparacaoCardProps {
   separacao: Separacao;
   onStatusChange: (id: string, newStatus: StatusSeparacao) => void;
   onEdit: (separacao: Separacao) => void;
+  onDelete?: (id: string) => void;
   isHighlighted?: boolean;
+  isAdmin?: boolean;
 }
 
 export function SeparacaoCard({ separacao, onStatusChange, onEdit, isHighlighted }: SeparacaoCardProps) {
