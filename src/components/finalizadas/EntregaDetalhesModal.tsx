@@ -146,6 +146,39 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
     return url;
   };
 
+  // ── Revert to separation (admin only) ──
+  const handleRevertToSeparacao = async () => {
+    if (!entrega) return;
+    setIsReverting(true);
+    try {
+      // 1. Update separacao status back to em_separacao
+      const { error: updateError } = await supabase
+        .from('separacoes')
+        .update({ status: 'em_separacao' })
+        .eq('id', entrega.separacao_id);
+      if (updateError) throw updateError;
+
+      // 2. Delete the entregas_finalizadas record
+      const { error: deleteError } = await supabase
+        .from('entregas_finalizadas')
+        .delete()
+        .eq('id', entrega.id);
+      if (deleteError) throw deleteError;
+
+      toast({ title: '✅ Entrega revertida para separação com sucesso!' });
+      onUpdated?.();
+      onClose();
+    } catch (err) {
+      toast({
+        title: 'Erro ao reverter',
+        description: err instanceof Error ? err.message : 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
   // ── Save ──
   const handleSave = async () => {
     setIsSaving(true);
