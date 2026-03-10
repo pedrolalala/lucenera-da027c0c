@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import {
   Calendar, MapPin, User, Star, FileText, Camera, AlertTriangle,
-  Save, Loader2, X, Plus, Shield,
+  Save, Loader2, X, Plus, Shield, Undo2,
 } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,11 @@ import { cn } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format, parseISO, differenceInCalendarDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -46,7 +52,9 @@ interface FormData {
 export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: EntregaDetalhesModalProps) {
   const [activeTab, setActiveTab] = useState('detalhes');
   const [isSaving, setIsSaving] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -136,6 +144,39 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
       if (match) return decodeURIComponent(match[1]);
     }
     return url;
+  };
+
+  // ── Revert to separation (admin only) ──
+  const handleRevertToSeparacao = async () => {
+    if (!entrega) return;
+    setIsReverting(true);
+    try {
+      // 1. Update separacao status back to em_separacao
+      const { error: updateError } = await supabase
+        .from('separacoes')
+        .update({ status: 'em_separacao' })
+        .eq('id', entrega.separacao_id);
+      if (updateError) throw updateError;
+
+      // 2. Delete the entregas_finalizadas record
+      const { error: deleteError } = await supabase
+        .from('entregas_finalizadas')
+        .delete()
+        .eq('id', entrega.id);
+      if (deleteError) throw deleteError;
+
+      toast({ title: '✅ Entrega revertida para separação com sucesso!' });
+      onUpdated?.();
+      onClose();
+    } catch (err) {
+      toast({
+        title: 'Erro ao reverter',
+        description: err instanceof Error ? err.message : 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsReverting(false);
+    }
   };
 
   // ── Save ──
@@ -365,7 +406,32 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
               )}
             </div>
 
-            <div className="flex justify-center pt-2">
+            <div className="flex items-center justify-between pt-2">
+              {isAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-orange-600 border-orange-300 hover:bg-orange-50" disabled={isReverting}>
+                      {isReverting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Undo2 className="w-4 h-4 mr-2" />}
+                      Reverter para Separação
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reverter entrega?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso vai remover esta entrega das finalizadas e voltar o pedido para "Em Separação".
+                        Use quando a baixa foi dada no código errado.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleRevertToSeparacao} className="bg-orange-600 hover:bg-orange-700">
+                        Sim, reverter
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button variant="outline" onClick={onClose}>Fechar</Button>
             </div>
           </TabsContent>
