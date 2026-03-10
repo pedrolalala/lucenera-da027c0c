@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import {
   Calendar, MapPin, User, Star, FileText, Camera, AlertTriangle,
-  Save, Loader2, X, Plus, Shield,
+  Save, Loader2, X, Plus, Shield, Undo2,
 } from 'lucide-react';
 import { EntregaFinalizada } from '@/hooks/useEntregasFinalizadas';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
