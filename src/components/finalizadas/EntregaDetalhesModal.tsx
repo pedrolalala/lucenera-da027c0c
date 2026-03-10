@@ -406,7 +406,32 @@ export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: Entr
               )}
             </div>
 
-            <div className="flex justify-center pt-2">
+            <div className="flex items-center justify-between pt-2">
+              {isAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-orange-600 border-orange-300 hover:bg-orange-50" disabled={isReverting}>
+                      {isReverting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Undo2 className="w-4 h-4 mr-2" />}
+                      Reverter para Separação
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reverter entrega?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso vai remover esta entrega das finalizadas e voltar o pedido para "Em Separação".
+                        Use quando a baixa foi dada no código errado.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleRevertToSeparacao} className="bg-orange-600 hover:bg-orange-700">
+                        Sim, reverter
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button variant="outline" onClick={onClose}>Fechar</Button>
             </div>
           </TabsContent>
