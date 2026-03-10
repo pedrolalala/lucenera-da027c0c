@@ -52,7 +52,9 @@ interface FormData {
 export function EntregaDetalhesModal({ entrega, open, onClose, onUpdated }: EntregaDetalhesModalProps) {
   const [activeTab, setActiveTab] = useState('detalhes');
   const [isSaving, setIsSaving] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
