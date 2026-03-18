@@ -1,158 +1,64 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
-    // Auth check
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // 1. Configura o Supabase do Lovable (Origem)
+    const lovableClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    const localClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // 2. Configura o SEU Supabase (Destino)
+    const seuSupabase = createClient(
+      Deno.env.get('SUPA') ?? '',
+      Deno.env.get('SUPA_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    const { data: { user }, error: userError } = await localClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Sessão inválida" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    console.log("Iniciando varredura no bucket entregas-fotos...");
 
-    // Check admin role
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+    // 3. Lista TODOS os arquivos (incluindo pastas 000, 004020, etc)
+    const { data: allFiles, error: listError } = await lovableClient
+      .storage
+      .from('entregas-fotos')
+      .list('', { recursive: true, limit: 1000 });
 
-    const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
+    if (listError) throw listError;
 
-    if (roleData?.role !== "admin") {
-      return new Response(JSON.stringify({ error: "Apenas administradores podem sincronizar" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let count = 0;
+    for (const file of allFiles) {
+      if (file.id) { // Ignora pastas vazias, foca em arquivos
+        console.log(`Copiando: ${file.name}...`);
 
-    // External Supabase client
-    const externalUrl = Deno.env.get("SUPA");
-    const externalKey = Deno.env.get("SUPA_SERVICE_ROLE_KEY");
-    if (!externalUrl || !externalKey) {
-      return new Response(JSON.stringify({ error: "Secrets SUPA e SUPA_SERVICE_ROLE_KEY não configuradas" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+        // Download do Lovable
+        const { data: blob, error: downloadError } = await lovableClient
+          .storage
+          .from('entregas-fotos')
+          .download(file.name);
 
-    const externalClient = createClient(externalUrl, externalKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    const BUCKET = "entregas-fotos";
-    let totalFolders = 0;
-    let totalFiles = 0;
-    const errors: string[] = [];
-
-    // Recursive list function
-    async function listAndSync(prefix: string) {
-      const { data: items, error: listError } = await adminClient.storage
-        .from(BUCKET)
-        .list(prefix, { limit: 1000 });
-
-      if (listError) {
-        const msg = `Erro ao listar ${prefix}: ${listError.message}`;
-        console.error(msg);
-        errors.push(msg);
-        return;
-      }
-
-      if (!items || items.length === 0) return;
-
-      for (const item of items) {
-        const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
-
-        // If it's a folder (no metadata means folder)
-        if (!item.metadata || item.id === null) {
-          totalFolders++;
-          console.log(`📁 Processando pasta: ${fullPath}`);
-          await listAndSync(fullPath);
+        if (downloadError) {
+          console.error(`Erro no download de ${file.name}:`, downloadError);
           continue;
         }
 
-        // It's a file - download from local
-        console.log(`⬇️  Baixando: ${fullPath}`);
-        const { data: fileData, error: downloadError } = await adminClient.storage
-          .from(BUCKET)
-          .download(fullPath);
-
-        if (downloadError || !fileData) {
-          const msg = `Erro ao baixar ${fullPath}: ${downloadError?.message}`;
-          console.error(msg);
-          errors.push(msg);
-          continue;
-        }
-
-        // Upload to external
-        console.log(`⬆️  Enviando para externo: ${fullPath}`);
-        const { error: uploadError } = await externalClient.storage
-          .from(BUCKET)
-          .upload(fullPath, fileData, {
-            contentType: item.metadata?.mimetype || "application/octet-stream",
-            upsert: true,
-          });
+        // Upload para o seu Supabase
+        const { error: uploadError } = await seuSupabase
+          .storage
+          .from('entregas-fotos')
+          .upload(file.name, blob, { upsert: true });
 
         if (uploadError) {
-          const msg = `Erro ao enviar ${fullPath}: ${uploadError.message}`;
-          console.error(msg);
-          errors.push(msg);
-          continue;
+          console.error(`Erro no upload de ${file.name}:`, uploadError);
+        } else {
+          count++;
         }
-
-        totalFiles++;
-        console.log(`✅ Copiado: ${fullPath}`);
       }
     }
 
-    console.log("🚀 Iniciando sincronização do bucket entregas-fotos...");
-    await listAndSync("");
+    return new Response(JSON.stringify({ message: `Sucesso! ${count} fotos migradas.` }), {
+      headers: { "Content-Type": "application/json" },
+    })
 
-    const summary = {
-      total_pastas_processadas: totalFolders,
-      total_arquivos_copiados: totalFiles,
-      erros: errors.length > 0 ? errors : "Nenhum erro",
-    };
-
-    console.log("📊 Resumo:", JSON.stringify(summary, null, 2));
-
-    return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro desconhecido";
-    console.error("❌ Erro fatal:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 })
   }
-});
+})
