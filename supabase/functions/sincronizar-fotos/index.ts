@@ -2,59 +2,87 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
   try {
-    // 1. Configura o Supabase do Lovable (Origem)
     const lovableClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // 2. Configura o SEU Supabase (Destino)
     const seuSupabase = createClient(
       Deno.env.get('SUPA') ?? '',
       Deno.env.get('SUPA_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log("Iniciando varredura no bucket entregas-fotos...");
+    console.log("Iniciando varredura recursiva no bucket entregas-fotos...")
 
-    // 3. Lista TODOS os arquivos (incluindo pastas 000, 004020, etc)
-    const { data: allFiles, error: listError } = await lovableClient
-      .storage
-      .from('entregas-fotos')
-      .list('', { recursive: true, limit: 1000 });
+    let totalArquivos = 0
+    let totalPastas = 0
+    const erros: string[] = []
 
-    if (listError) throw listError;
+    async function listarRecursivo(pasta: string) {
+      const { data: items, error } = await lovableClient
+        .storage
+        .from('entregas-fotos')
+        .list(pasta, { limit: 1000 })
 
-    let count = 0;
-    for (const file of allFiles) {
-      if (file.id) { // Ignora pastas vazias, foca em arquivos
-        console.log(`Copiando: ${file.name}...`);
+      if (error) {
+        console.error(`Erro ao listar pasta '${pasta}':`, error)
+        erros.push(`Erro ao listar: ${pasta}`)
+        return
+      }
 
-        // Download do Lovable
-        const { data: blob, error: downloadError } = await lovableClient
-          .storage
-          .from('entregas-fotos')
-          .download(file.name);
+      if (!items || items.length === 0) return
 
-        if (downloadError) {
-          console.error(`Erro no download de ${file.name}:`, downloadError);
-          continue;
-        }
+      for (const item of items) {
+        const fullPath = pasta ? `${pasta}/${item.name}` : item.name
 
-        // Upload para o seu Supabase
-        const { error: uploadError } = await seuSupabase
-          .storage
-          .from('entregas-fotos')
-          .upload(file.name, blob, { upsert: true });
-
-        if (uploadError) {
-          console.error(`Erro no upload de ${file.name}:`, uploadError);
+        if (!item.id) {
+          // É uma pasta, entrar recursivamente
+          totalPastas++
+          console.log(`📁 Entrando na pasta: ${fullPath}`)
+          await listarRecursivo(fullPath)
         } else {
-          count++;
+          // É um arquivo real
+          console.log(`⬇️ Baixando: ${fullPath}...`)
+
+          const { data: blob, error: downloadError } = await lovableClient
+            .storage
+            .from('entregas-fotos')
+            .download(fullPath)
+
+          if (downloadError) {
+            console.error(`❌ Erro no download de ${fullPath}:`, downloadError)
+            erros.push(`Download falhou: ${fullPath}`)
+            continue
+          }
+
+          const { error: uploadError } = await seuSupabase
+            .storage
+            .from('entregas-fotos')
+            .upload(fullPath, blob, { upsert: true })
+
+          if (uploadError) {
+            console.error(`❌ Erro no upload de ${fullPath}:`, uploadError)
+            erros.push(`Upload falhou: ${fullPath}`)
+          } else {
+            totalArquivos++
+            console.log(`✅ Copiado: ${fullPath}`)
+          }
         }
       }
     }
 
-    return new Response(JSON.stringify({ message: `Sucesso! ${count} fotos migradas.` }), {
+    await listarRecursivo('')
+
+    const resultado = {
+      message: `Sincronização concluída!`,
+      total_pastas_processadas: totalPastas,
+      total_arquivos_copiados: totalArquivos,
+      erros: erros.length > 0 ? erros : 'Nenhum erro'
+    }
+
+    console.log("📊 Resultado final:", JSON.stringify(resultado))
+
+    return new Response(JSON.stringify(resultado), {
       headers: { "Content-Type": "application/json" },
     })
 
