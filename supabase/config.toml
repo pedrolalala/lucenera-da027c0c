@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.sincronizar-fotos]
 verify_jwt = false
+
+[functions.sincronizar-materiais]
+verify_jwt = false
