@@ -2,3 +2,6 @@ project_id = "lxdaqoqxhyzwqzjpinrj"
 
 [functions.optimize-route]
 verify_jwt = false
+
+[functions.sincronizar-fotos]
+verify_jwt = false
