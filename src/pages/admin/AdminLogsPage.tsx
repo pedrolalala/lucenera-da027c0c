@@ -13,142 +13,94 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  ClipboardList, 
+import {
+  ClipboardList,
   Search,
   Package,
   CheckCircle2,
-  UserPlus,
-  Settings,
   Pencil,
   Trash2,
-  Filter,
   RefreshCw,
-  Loader2
+  Loader2,
+  ArrowRightLeft,
+  AlertTriangle,
+  User,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface ActivityLog {
   id: string;
-  type: 'separacao_created' | 'entrega_finished' | 'separacao_updated' | 'separacao_deleted';
-  message: string;
-  timestamp: Date;
-  details?: string;
+  user_id: string | null;
+  user_email: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  entity_label: string | null;
+  description: string;
+  details: Record<string, unknown> | null;
+  created_at: string;
+}
+
+const ACTION_META: Record<string, { label: string; color: string; icon: JSX.Element }> = {
+  created: { label: 'Criação', color: 'bg-blue-100 text-blue-700', icon: <Package className="w-4 h-4" /> },
+  status_changed: { label: 'Status', color: 'bg-orange-100 text-orange-700', icon: <ArrowRightLeft className="w-4 h-4" /> },
+  updated: { label: 'Edição', color: 'bg-amber-100 text-amber-700', icon: <Pencil className="w-4 h-4" /> },
+  deleted: { label: 'Exclusão', color: 'bg-red-100 text-red-700', icon: <Trash2 className="w-4 h-4" /> },
+  delivered: { label: 'Entrega', color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="w-4 h-4" /> },
+  reverted: { label: 'Reversão', color: 'bg-purple-100 text-purple-700', icon: <ArrowRightLeft className="w-4 h-4" /> },
+  pendency_created: { label: 'Pendência', color: 'bg-yellow-100 text-yellow-800', icon: <AlertTriangle className="w-4 h-4" /> },
+  pendency_status_changed: { label: 'Pendência', color: 'bg-yellow-100 text-yellow-800', icon: <AlertTriangle className="w-4 h-4" /> },
+};
+
+function metaFor(action: string) {
+  return ACTION_META[action] || { label: action, color: 'bg-gray-100 text-gray-700', icon: <ClipboardList className="w-4 h-4" /> };
 }
 
 export default function AdminLogsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [entityFilter, setEntityFilter] = useState<string>('all');
 
-  // Fetch activity logs from separacoes and entregas
   const { data: logs, isLoading, refetch } = useQuery({
-    queryKey: ['admin-logs'],
+    queryKey: ['admin-activity-logs'],
     queryFn: async () => {
-      const [separacoesRes, entregasRes] = await Promise.all([
-        supabase
-          .from('separacoes')
-          .select('id, cliente, codigo_obra, created_at, status, updated_at')
-          .order('created_at', { ascending: false })
-          .limit(50),
-        supabase
-          .from('entregas_finalizadas')
-          .select('id, cliente, codigo_obra, data_entrega_real, recebido_por')
-          .order('data_entrega_real', { ascending: false })
-          .limit(50),
-      ]);
-
-      const activities: ActivityLog[] = [];
-
-      // Map separacoes to activities
-      separacoesRes.data?.forEach(s => {
-        activities.push({
-          id: `sep-${s.id}`,
-          type: 'separacao_created',
-          message: `Separação criada: ${s.cliente}`,
-          timestamp: new Date(s.created_at),
-          details: `Obra: ${s.codigo_obra} | Status: ${s.status}`,
-        });
-      });
-
-      // Map entregas to activities
-      entregasRes.data?.forEach(e => {
-        activities.push({
-          id: `ent-${e.id}`,
-          type: 'entrega_finished',
-          message: `Entrega finalizada: ${e.cliente}`,
-          timestamp: new Date(e.data_entrega_real),
-          details: `Obra: ${e.codigo_obra} | Recebido por: ${e.recebido_por}`,
-        });
-      });
-
-      // Sort by timestamp descending
-      return activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      const { data, error } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data || []) as ActivityLog[];
     },
   });
 
-  const getIcon = (type: ActivityLog['type']) => {
-    switch (type) {
-      case 'separacao_created':
-        return <Package className="w-4 h-4" />;
-      case 'entrega_finished':
-        return <CheckCircle2 className="w-4 h-4" />;
-      case 'separacao_updated':
-        return <Pencil className="w-4 h-4" />;
-      case 'separacao_deleted':
-        return <Trash2 className="w-4 h-4" />;
-      default:
-        return <Settings className="w-4 h-4" />;
-    }
-  };
-
-  const getColor = (type: ActivityLog['type']) => {
-    switch (type) {
-      case 'separacao_created':
-        return 'bg-blue-100 text-blue-600';
-      case 'entrega_finished':
-        return 'bg-green-100 text-green-600';
-      case 'separacao_updated':
-        return 'bg-orange-100 text-orange-600';
-      case 'separacao_deleted':
-        return 'bg-red-100 text-red-600';
-      default:
-        return 'bg-gray-100 text-gray-600';
-    }
-  };
-
-  const getTypeBadge = (type: ActivityLog['type']) => {
-    switch (type) {
-      case 'separacao_created':
-        return <Badge className="bg-blue-100 text-blue-700">Separação</Badge>;
-      case 'entrega_finished':
-        return <Badge className="bg-green-100 text-green-700">Entrega</Badge>;
-      case 'separacao_updated':
-        return <Badge className="bg-orange-100 text-orange-700">Atualização</Badge>;
-      case 'separacao_deleted':
-        return <Badge className="bg-red-100 text-red-700">Exclusão</Badge>;
-      default:
-        return <Badge variant="secondary">Sistema</Badge>;
-    }
-  };
-
-  const filteredLogs = logs?.filter(log => {
-    const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          log.details?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || log.type === typeFilter;
-    return matchesSearch && matchesType;
+  const filteredLogs = logs?.filter((log) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      !term ||
+      log.description.toLowerCase().includes(term) ||
+      log.user_email?.toLowerCase().includes(term) ||
+      log.entity_label?.toLowerCase().includes(term);
+    const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+    const matchesEntity = entityFilter === 'all' || log.entity_type === entityFilter;
+    return matchesSearch && matchesAction && matchesEntity;
   });
+
+  const counts = {
+    total: logs?.length || 0,
+    created: logs?.filter((l) => l.action === 'created').length || 0,
+    status: logs?.filter((l) => l.action === 'status_changed').length || 0,
+    delivered: logs?.filter((l) => l.action === 'delivered').length || 0,
+  };
 
   return (
     <AdminLayout>
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-purple-700">
-            Logs de Auditoria
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-purple-700">Logs de Auditoria</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Histórico de atividades do sistema
+            Histórico detalhado de todas as ações dos usuários
           </p>
         </div>
         <Button variant="outline" onClick={() => refetch()}>
@@ -157,18 +109,37 @@ export default function AdminLogsPage() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <ClipboardList className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{counts.total}</p>
+              <p className="text-xs text-muted-foreground">Total registros</p>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
-                {logs?.filter(l => l.type === 'separacao_created').length || 0}
-              </p>
-              <p className="text-xs text-muted-foreground">Separações</p>
+              <p className="text-2xl font-bold">{counts.created}</p>
+              <p className="text-xs text-muted-foreground">Criações</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+              <ArrowRightLeft className="w-5 h-5 text-orange-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{counts.status}</p>
+              <p className="text-xs text-muted-foreground">Mudanças de Status</p>
             </div>
           </CardContent>
         </Card>
@@ -178,70 +149,62 @@ export default function AdminLogsPage() {
               <CheckCircle2 className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
-                {logs?.filter(l => l.type === 'entrega_finished').length || 0}
-              </p>
-              <p className="text-xs text-muted-foreground">Entregas</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{logs?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Total Logs</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-              <Filter className="w-5 h-5 text-gray-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{filteredLogs?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">Filtrados</p>
+              <p className="text-2xl font-bold">{counts.delivered}</p>
+              <p className="text-xs text-muted-foreground">Entregas finalizadas</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters */}
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar em logs..."
+                placeholder="Buscar por descrição, usuário ou código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <Select value={actionFilter} onValueChange={setActionFilter}>
               <SelectTrigger className="w-full sm:w-48">
-                <SelectValue placeholder="Filtrar por tipo" />
+                <SelectValue placeholder="Ação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as ações</SelectItem>
+                <SelectItem value="created">Criação</SelectItem>
+                <SelectItem value="status_changed">Mudança de status</SelectItem>
+                <SelectItem value="updated">Edição</SelectItem>
+                <SelectItem value="deleted">Exclusão</SelectItem>
+                <SelectItem value="delivered">Entrega finalizada</SelectItem>
+                <SelectItem value="reverted">Reversão</SelectItem>
+                <SelectItem value="pendency_created">Pendência criada</SelectItem>
+                <SelectItem value="pendency_status_changed">Pendência atualizada</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={entityFilter} onValueChange={setEntityFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Tipo" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os tipos</SelectItem>
-                <SelectItem value="separacao_created">Separações criadas</SelectItem>
-                <SelectItem value="entrega_finished">Entregas finalizadas</SelectItem>
+                <SelectItem value="separacao">Separação</SelectItem>
+                <SelectItem value="entrega">Entrega</SelectItem>
+                <SelectItem value="pendencia">Pendência</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardContent>
       </Card>
 
-      {/* Logs List */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
             Histórico de Atividades
+            <Badge variant="secondary" className="ml-2">{filteredLogs?.length || 0}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -251,28 +214,44 @@ export default function AdminLogsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredLogs?.map((log) => (
-                <div 
-                  key={log.id}
-                  className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${getColor(log.type)}`}>
-                    {getIcon(log.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-medium">{log.message}</p>
-                      {getTypeBadge(log.type)}
+              {filteredLogs?.map((log) => {
+                const meta = metaFor(log.action);
+                return (
+                  <div
+                    key={log.id}
+                    className="flex items-start gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${meta.color}`}>
+                      {meta.icon}
                     </div>
-                    {log.details && (
-                      <p className="text-sm text-muted-foreground mt-1">{log.details}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {format(log.timestamp, "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium">{log.description}</p>
+                        <Badge className={meta.color}>{meta.label}</Badge>
+                        {log.entity_label && (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {log.entity_label}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                        <User className="w-3.5 h-3.5" />
+                        <span className="font-medium">{log.user_email || 'Sistema'}</span>
+                      </div>
+                      {log.details && Object.keys(log.details).length > 0 && (
+                        <div className="mt-2 text-xs text-muted-foreground bg-muted/40 rounded px-2 py-1 font-mono break-all">
+                          {Object.entries(log.details)
+                            .map(([k, v]) => `${k}: ${v ?? '-'}`)
+                            .join(' • ')}
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {format(new Date(log.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: ptBR })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {!filteredLogs?.length && (
                 <div className="text-center py-12 text-muted-foreground">
                   <ClipboardList className="w-12 h-12 mx-auto mb-4 opacity-50" />

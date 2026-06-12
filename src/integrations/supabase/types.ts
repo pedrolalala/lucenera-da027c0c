@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          description: string
+          details: Json | null
+          entity_id: string | null
+          entity_label: string | null
+          entity_type: string
+          id: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type: string
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_label?: string | null
+          entity_type?: string
+          id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       entregas_finalizadas: {
         Row: {
           cliente: string
@@ -393,6 +432,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_email: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
