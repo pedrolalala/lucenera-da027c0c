@@ -50,6 +50,18 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return new Response(data, { headers: { ...cors, "Content-Type": "application/octet-stream" } });
     }
+    if (action === "users") {
+      const all: any[] = [];
+      let page = 1;
+      while (true) {
+        const { data, error } = await sb.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error) throw error;
+        all.push(...data.users);
+        if (data.users.length < 1000) break;
+        page++;
+      }
+      return new Response(JSON.stringify(all), { headers: { ...cors, "Content-Type": "application/json" } });
+    }
     return new Response("bad action", { status: 400, headers: cors });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
